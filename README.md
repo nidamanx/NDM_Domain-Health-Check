@@ -131,8 +131,8 @@ command for your system:
 ## Installation
 
 ```bash
-git clone https://github.com/nidamanx/ndm_domain-health-check.git
-cd ndm_domain-health-check
+git clone https://github.com/nidamanx/NDM_Domain-Health-Check.git
+cd NDM_Domain-Health-Check
 chmod +x ndm_domain-health-check.sh
 ./ndm_domain-health-check.sh --requirements      # check the needed tools
 ```
@@ -164,8 +164,8 @@ MSYS2 and Cygwin are not supported.
    sudo apt update
    sudo apt install git dnsutils python3 openssl curl iputils-ping
    cd ~
-   git clone https://github.com/nidamanx/ndm_domain-health-check.git
-   cd ndm_domain-health-check
+   git clone https://github.com/nidamanx/NDM_Domain-Health-Check.git
+   cd NDM_Domain-Health-Check
    ./ndm_domain-health-check.sh --requirements
    ```
 
@@ -300,7 +300,7 @@ Then set it in the configuration file, for example `DNSBL_RESOLVER=127.0.0.1`.
 ```bash
 ./ndm_domain-health-check.sh -o example.com
 # ...report on screen...
-Report saved to: /path/to/ndm_domain-health-check/reports/example.com_20261014-113538.txt
+Report saved to: /path/to/NDM_Domain-Health-Check/reports/example.com_20261014-113538.txt
 ```
 
 - File name: `<domain>_<YYYYMMDD>-<HHMMSS>.txt`, plain text (colors removed). The file is
@@ -633,7 +633,7 @@ This makes the script usable from cron jobs or other scripts.
 ## Project layout
 
 ```
-ndm_domain-health-check/
+NDM_Domain-Health-Check/
 ├── ndm_domain-health-check.sh            the script
 ├── ndm_domain-health-check.conf.example  configuration template (versioned)
 ├── ndm_domain-health-check.conf          your configuration (personal, ignored by Git)
