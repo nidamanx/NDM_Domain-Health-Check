@@ -49,7 +49,7 @@ APP_LICENSE="AGPL-3.0-or-later"
 #                                whose reverse DNS is a forward-confirmed host of one of them
 #                                is accepted. Overrides the RELATED_DOMAINS variable.
 #          -o, --output          also save the report as plain text:
-#                                reports/<domain>_<YYYY-MM-DD>_<HHMMSS>.txt
+#                                reports/<domain>_<YYYYMMDD>-<HHMMSS>.txt
 #                                (reports/ is next to this script; see OUTPUT_DIR)
 #          --output-dir DIR      save the report in DIR (implies --output; a relative
 #                                DIR starts from the current directory)
