@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: bash -n ndm_domain-health-check.sh
+      - name: ShellCheck
+        run: shellcheck ndm_domain-health-check.sh
+      - name: Embedded Python helpers compile
+        run: |
+          mkdir -p "$RUNNER_TEMP/py"
+          awk -v dir="$RUNNER_TEMP/py" '
+            /<<.PY.$/ {n++; f = sprintf("%s/helper%02d.py", dir, n); on = 1; next}
+            /^PY$/ {on = 0; next}
+            on {print > f}' ndm_domain-health-check.sh
+          test "$(ls "$RUNNER_TEMP/py" | wc -l)" -gt 0
+          python3 -m py_compile "$RUNNER_TEMP"/py/*.py
+
+  smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dig
+        run: sudo apt-get update && sudo apt-get install -y dnsutils
+      - name: Version and help
+        run: |
+          ./ndm_domain-health-check.sh --version
+          ./ndm_domain-health-check.sh --help
+      - name: Requirements
+        run: ./ndm_domain-health-check.sh --requirements
+      - name: Invalid domain exits with 1
+        run: |
+          rc=0; ./ndm_domain-health-check.sh 'not a domain' || rc=$?
+          test "$rc" -eq 1
+      - name: Invalid option exits with 2
+        run: |
+          rc=0; ./ndm_domain-health-check.sh --nope || rc=$?
+          test "$rc" -eq 2

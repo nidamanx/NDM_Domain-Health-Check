@@ -1,0 +1,15 @@
+# Personal configuration (your domains): only the .example template is versioned
+ndm_domain-health-check.conf
+
+# Generated reports: the directory is versioned (via .gitkeep), its contents are not
+reports/*
+!reports/.gitkeep
+
+# Editors, caches and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

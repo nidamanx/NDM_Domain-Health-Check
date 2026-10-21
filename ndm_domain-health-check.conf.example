@@ -1,0 +1,85 @@
+# ndm_domain-health-check.conf.example - template for NDM Domain Health Check (ndm_domain-health-check.sh)
+#
+# How to use it:
+#   1. Copy this file next to the script, removing ".example":
+#        cp ndm_domain-health-check.conf.example ndm_domain-health-check.conf
+#   2. Edit ndm_domain-health-check.conf: uncomment (remove the leading "#") only the lines
+#      you want to change, and replace the example values with yours.
+#
+# Rules:
+#   - One KEY=value per line. Quotes are optional: KEY="a b" and KEY=a b are the same.
+#   - Lines starting with "#" are ignored. A commented or missing key keeps its default.
+#   - This file is only read, never executed: commands written here are not run.
+#   - ndm_domain-health-check.conf is personal (your domains): it is listed in .gitignore.
+#     Only this template belongs in the repository.
+#   - Command-line options win over this file (see ./ndm_domain-health-check.sh --help).
+
+# Your other domains, space or comma separated. A mail-sending IP (for example a VPS
+# allowed in SPF) whose reverse DNS is a forward-confirmed host of one of these domains
+# is recognized as yours instead of being marked "to check".
+# Default: none. Taken only from this file or from --related-domains.
+#RELATED_DOMAINS="example.net example.org"
+
+# Validating resolver used for the checks (it must validate DNSSEC).
+# Default: 9.9.9.10, Quad9 (Swiss non-profit foundation): validates DNSSEC and, unlike
+# 9.9.9.9, does not block the domains it considers malicious, so those are still checked.
+# Your own validating resolver also works, for example Knot Resolver or Unbound on this
+# machine: 127.0.0.1
+#RESOLVER=9.9.9.10
+
+# DKIM selectors to look for. The DNS cannot list the ones a domain uses, so the
+# script tries these, the most common ones. If DKIM is active but not found, add the
+# selector of your mail service: it is the s= value in the DKIM-Signature header of a
+# message you sent (its DKIM record is <selector>._domainkey.<your domain>).
+# Default (all on one line):
+#DKIM_SELECTORS="brevo1 brevo2 ctct1 ctct2 default dkim dkim1 dkim2 fm1 fm2 fm3 google hs1 hs2 k1 k2 k3 km1 km2 mail mandrill mte1 mte2 pdk1 pdk2 protonmail protonmail2 protonmail3 s1 s2 selector1 selector2 sig1 smtp zmail zoho"
+
+# Directory for the reports saved with --output: relative to the script directory,
+# or an absolute path such as /home/user/domain-reports.
+# Default: reports
+#OUTPUT_DIR=reports
+
+# DNS blocklists checked for the mail-sending IP addresses, as "zone:level", where level
+# is the result when the IP is listed: fail (error) or warn (warning).
+# Most lists know only IPv4. Add ":6" (zone:level:6) to a list that also answers for IPv6
+# addresses; Spamhaus ZEN is always queried for IPv6. The other lists skip IPv6 addresses.
+# Default: lists run by non-profit or community projects, free to query and to leave.
+#DNSBLS="psbl.surriel.com:warn zen.spamhaus.org:fail:6"
+
+# Blocklists of domain names, as "zone:level": the reputation of the name itself, whatever its
+# IP addresses are. The same resolver rules as for DNSBLS apply (see DNSBL_RESOLVER below).
+# Set it empty (DOMAIN_DNSBLS=) to skip them. Default: Spamhaus DBL.
+#DOMAIN_DNSBLS="dbl.spamhaus.org:fail"
+
+# Resolver used only for the blocklist queries. Some lists, Spamhaus among them, refuse
+# queries that arrive through public or shared resolvers: the report then says that the list
+# was not checked. What to use, in order of preference:
+#   1. 127.0.0.1, if this machine runs its own recursive resolver (Unbound, Knot Resolver,
+#      BIND). The queries leave from your own address, which is what the lists expect.
+#      It does not help if 127.0.0.1 only forwards to another resolver (a stub such as
+#      systemd-resolved or dnsmasq): the query still leaves through the forwarder's upstream.
+#   2. Your router or gateway, or your ISP's resolver, when it resolves on its own or
+#      forwards to the ISP. The lists see an ordinary, low-volume customer address and
+#      accept it. It fails when the router forwards to a public resolver.
+#   3. Avoid public resolvers (Google, Cloudflare, Quad9...): many clients share them, the
+#      lists cannot tell them apart and refuse them to limit abuse.
+# To test a resolver (replace IP with its address):
+#     dig +short 2.0.0.127.zen.spamhaus.org @IP
+# 2.0.0.127 is the Spamhaus test address, always listed. Answer 127.0.0.2 (often with
+# 127.0.0.4 and 127.0.0.10) = the resolver is accepted; 127.255.255.254 (any 127.255.255.x)
+# = refused; no answer = the resolver does not respond or does not resolve.
+# Default: empty, the system resolver.
+#DNSBL_RESOLVER=127.0.0.1
+
+# Certificate Transparency search through crt.sh (every name that ever had a certificate).
+# Default: on. Set to off to skip it.
+#CT_LOOKUP=off
+
+# Readable names for the services found in the SPF record. In the report, an include such
+# as include:_spf.example.com is shown with a label ("Example Mail") instead of only its
+# technical name. Format: "text=Label" pairs separated by ";": an include whose name
+# contains "text" is shown with "Label". Default: none (includes shown by name).
+#SPF_PROVIDERS="newsletter.example=Newsletter service; relay.example.net=Hosting relay"
+
+# Disable colors (any non-empty value).
+#NO_COLOR=1
