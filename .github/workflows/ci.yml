@@ -12,7 +12,7 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Syntax
         run: bash -n ndm_domain-health-check.sh
       - name: ShellCheck
@@ -30,7 +30,7 @@ jobs:
   smoke:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install dig
         run: sudo apt-get update && sudo apt-get install -y dnsutils
       - name: Version and help
