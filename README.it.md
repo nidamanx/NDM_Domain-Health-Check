@@ -207,7 +207,7 @@ in automatico.
 | `-a`, `--all` | Controlla il dominio indicato e ogni dominio di `RELATED_DOMAINS`, quattro alla volta, e stampa una tabella riassuntiva |
 | `-r`, `--related-domains ELENCO` | I tuoi altri domini, separati da virgola o spazio. Un IP che invia posta, il cui DNS inverso è un host confermato di uno di essi, viene riconosciuto come tuo. Ha la precedenza su `RELATED_DOMAINS` |
 | `-o`, `--output` | Salva il report anche come testo semplice (vedi [Salvare i report](#salvare-i-report)) |
-| `--output-dir CARTELLA` | Salva il report in `CARTELLA` (implica `--output`) |
+| `-d`, `--output-dir CARTELLA` | Salva il report in `CARTELLA` (implica `--output`) |
 | `--requirements` | Mostra gli strumenti necessari e come installarli |
 | `-v`, `--version` | Mostra nome, versione, autore, licenza e disclaimer |
 | `-h`, `--help` | Mostra l'aiuto |
@@ -326,7 +326,7 @@ Report saved to: /percorso/NDM_Domain-Health-Check/reports/example.com_20261014-
 - Cartella predefinita: `reports/` accanto allo script. Viene distribuita vuota (nel
   repository c'è solo il segnaposto `.gitkeep`); i report salvati lì sono ignorati da
   Git.
-- `OUTPUT_DIR` nel file di configurazione la cambia in modo permanente; `--output-dir
+- `OUTPUT_DIR` nel file di configurazione la cambia in modo permanente; `-d`/`--output-dir
   CARTELLA` la cambia per una sola esecuzione (una `CARTELLA` relativa parte dalla
   cartella corrente).
 

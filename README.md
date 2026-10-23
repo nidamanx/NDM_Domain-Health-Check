@@ -196,7 +196,7 @@ not a subdomain: `www`, the MX and the other names are checked automatically.
 | `-a`, `--all` | Check the domain given and every domain in `RELATED_DOMAINS`, four at a time, and print one summary table |
 | `-r`, `--related-domains LIST` | Your other domains, comma or space separated. A mail-sending IP whose reverse DNS is a forward-confirmed host of one of them is recognized as yours. Overrides `RELATED_DOMAINS` |
 | `-o`, `--output` | Also save the report as plain text (see [Saving reports](#saving-reports)) |
-| `--output-dir DIR` | Save the report in `DIR` (implies `--output`) |
+| `-d`, `--output-dir DIR` | Save the report in `DIR` (implies `--output`) |
 | `--requirements` | Show the needed tools and how to install them |
 | `-v`, `--version` | Show name, version, author, license and disclaimer |
 | `-h`, `--help` | Show the help |
@@ -311,7 +311,7 @@ Report saved to: /path/to/NDM_Domain-Health-Check/reports/example.com_20261014-1
   nameservers, DS, MX, SPF, DMARC, DKIM, CAA and similar changes are marked "to check".
 - Default directory: `reports/` next to the script. It ships empty (only a `.gitkeep`
   placeholder is versioned); the reports saved in it are ignored by Git.
-- `OUTPUT_DIR` in the config file changes it permanently; `--output-dir DIR` changes it
+- `OUTPUT_DIR` in the config file changes it permanently; `-d`/`--output-dir DIR` changes it
   for one run (a relative `DIR` starts from the current directory).
 
 ## Sample output

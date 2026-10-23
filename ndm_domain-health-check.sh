@@ -51,7 +51,7 @@ APP_LICENSE="AGPL-3.0-or-later"
 #          -o, --output          also save the report as plain text:
 #                                reports/<domain>_<YYYYMMDD>-<HHMMSS>.txt
 #                                (reports/ is next to this script; see OUTPUT_DIR)
-#          --output-dir DIR      save the report in DIR (implies --output; a relative
+#          -d, --output-dir DIR  save the report in DIR (implies --output; a relative
 #                                DIR starts from the current directory)
 #          -b, --brief           diagnosis only: skip the practical sections 13
 #                                (provider change notes) and 14 (how to fix)
@@ -1532,7 +1532,7 @@ while (($#)); do
     -c|--compare) COMPARE=1 ;;
     -a|--all) ALL=1 ;;
     -o|--output) OUTPUT=1 ;;
-    --output-dir)
+    -d|--output-dir)
       if (($# < 2)) || [[ $2 == -* ]]; then
         echo "Option $1 needs a directory (see --help)" >&2; exit 2
       fi
