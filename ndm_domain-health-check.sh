@@ -5,8 +5,8 @@ APP_NAME="NDM Domain Health Check"
 APP_DESCRIPTION="Checks a domain's registration, DNS, DNSSEC, web/TLS and mail setup \
 (SPF, DKIM, DMARC, mail servers, blocklists, IP ownership) and grades every finding."
 APP_AUTHOR="Nicola Davide Mannarelli (@nidamanx)"
-APP_VERSION="1.1.0"
-APP_RELEASE_DATE="2026-10-21"
+APP_VERSION="1.2.0"
+APP_RELEASE_DATE="2026-10-23"
 APP_COPYRIGHT="Copyright (C) 2026 Nicola Davide Mannarelli (@nidamanx)"
 APP_LICENSE="AGPL-3.0-or-later"
 # ------------------------------------------------------------------------------

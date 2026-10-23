@@ -3,7 +3,7 @@
 [English](README.md) · **Italiano**
 
 [![License: AGPL v3+](https://img.shields.io/badge/License-AGPL_v3%2B-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.1.0-informational)
+![Version](https://img.shields.io/badge/version-1.2.0-informational)
 ![Shell](https://img.shields.io/badge/shell-bash-4EAA25)
 
 **NDM Domain Health Check** controlla registrazione, DNS, DNSSEC, web/TLS e posta di un dominio
@@ -357,7 +357,7 @@ tuo:
 
 ```
 ══════════════════════════════════════════════════════════════════════
-  NDM Domain Health Check (1.1.0)
+  NDM Domain Health Check (1.2.0)
   Domain: EXAMPLE.COM
   Resolver: 9.9.9.10  ·  2026-10-14 12:23
   ✔ ok  ↑ improvable  ◆ to check  ⚠ warning  ✘ error  ℹ info
