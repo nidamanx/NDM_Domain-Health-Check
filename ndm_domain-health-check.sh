@@ -1664,8 +1664,9 @@ if [[ -n $OUTPUT && -z ${_NDM_CHILD:-} ]]; then
   [[ -t 1 ]] && color=1
   _NDM_SAVE=1 _NDM_OUTDIR=$OUTPUT_DIR _NDM_CHILD=1 _NDM_FORCE_COLOR=$color \
     "${BASH:-bash}" "$0" "${child_args[@]+"${child_args[@]}"}" "$domain" \
-    | tee "$raw" | grep -a --line-buffered -v '^#NDM_FACT '
-  # The #NDM_FACT lines stay in the saved file: the next run compares itself with them.
+    | tee "$raw" | grep -a --line-buffered -Ev '^#NDM_(FACT|NOTE) '
+  # The #NDM_FACT lines (and the #NDM_NOTE lines explaining them) stay in the saved file:
+  # the next run compares itself with them.
   status=${PIPESTATUS[0]}
   # Plain-text copy: drop the color escape sequences.
   # The report holds the domain's real data: private file, written aside and then renamed.
@@ -3991,7 +3992,14 @@ fi
 rule; printf '\n'
 
 fact '~err' "$FAIL_COUNT"; fact '~warn' "$WARN_COUNT"; fact '~check' "$CHECK_COUNT"; fact '~tip' "$TIP_COUNT"; fact '~ok' "$OK_COUNT"
-[[ -n ${_NDM_SAVE:-} ]] && printf '#NDM_FACT %s\n' "${FACTS[@]}"
+if [[ -n ${_NDM_SAVE:-} ]]; then
+  printf '#NDM_NOTE %s\n' \
+    "Comparison data, hidden on screen: values found by this run." \
+    "The next run with -o or -c compares itself with them (section 15, CHANGES)." \
+    "Keys starting with ~ are counters for the multi-domain summary: not compared." \
+    "Do not edit these lines."
+  printf '#NDM_FACT %s\n' "${FACTS[@]}"
+fi
 [[ -n ${_NDM_FACTS_FILE:-} ]] && printf '%s\n' "${FACTS[@]}" >"$_NDM_FACTS_FILE"
 
 ((FAIL_COUNT == 0))

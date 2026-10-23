@@ -305,7 +305,8 @@ Report saved to: /path/to/NDM_Domain-Health-Check/reports/example.com_20261014-1
 
 - File name: `<domain>_<YYYYMMDD>-<HHMMSS>.txt`, plain text (colors removed). The file is
   private (mode 600: it holds your domain's real data) and an existing file is never overwritten.
-- Each saved report ends with `#NDM_FACT` lines (hidden on screen). The next run with `-o` or
+- Each saved report ends with `#NDM_FACT` lines, introduced by a few `#NDM_NOTE` lines that
+  explain them (both hidden on screen). The next run with `-o` or
   `--compare` compares itself with the latest report of the same domain and prints section 15:
   nameservers, DS, MX, SPF, DMARC, DKIM, CAA and similar changes are marked "to check".
 - Default directory: `reports/` next to the script. It ships empty (only a `.gitkeep`

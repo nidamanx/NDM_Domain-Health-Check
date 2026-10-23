@@ -318,7 +318,8 @@ Report saved to: /percorso/NDM_Domain-Health-Check/reports/example.com_20261014-
 - Nome del file: `<dominio>_<AAAAMMGG>-<HHMMSS>.txt`, testo semplice (senza colori). Il file è
   privato (modo 600: contiene i dati reali del tuo dominio) e un file esistente non viene mai
   sovrascritto.
-- Ogni report salvato termina con righe `#NDM_FACT` (nascoste a schermo). La volta dopo, con `-o` o
+- Ogni report salvato termina con righe `#NDM_FACT`, precedute da alcune righe `#NDM_NOTE` che
+  le spiegano (entrambe nascoste a schermo). La volta dopo, con `-o` o
   `--compare`, lo script si confronta con l'ultimo report dello stesso dominio e stampa la
   sezione 15: cambiamenti di nameserver, DS, MX, SPF, DMARC, DKIM, CAA e simili sono segnati
   come "da verificare".
