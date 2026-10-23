@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -26,6 +27,30 @@ jobs:
             on {print > f}' ndm_domain-health-check.sh
           test "$(ls "$RUNNER_TEMP/py" | wc -l)" -gt 0
           python3 -m py_compile "$RUNNER_TEMP"/py/*.py
+      - name: Version matches in every file
+        # APP_VERSION and APP_RELEASE_DATE are the reference; on a tag push the tag must match too.
+        run: |
+          set -u
+          ver=$(sed -n 's/^APP_VERSION="\(.*\)"$/\1/p' ndm_domain-health-check.sh)
+          date=$(sed -n 's/^APP_RELEASE_DATE="\(.*\)"$/\1/p' ndm_domain-health-check.sh)
+          echo "APP_VERSION=$ver APP_RELEASE_DATE=$date"
+          fail=0
+          expect() {  # file, what, found, wanted
+            if [[ $3 != "$4" ]]; then
+              echo "::error file=$1::$2 is '$3', expected '$4'"; fail=1
+            fi
+          }
+          for f in README.md README.it.md; do
+            expect "$f" "version badge" "$(sed -n 's/.*badge\/version-\([^-]*\)-informational.*/\1/p' "$f")" "$ver"
+            expect "$f" "sample report header" "$(sed -n 's/^  NDM Domain Health Check (\(.*\))$/\1/p' "$f")" "$ver"
+          done
+          expect CITATION.cff "version" "$(sed -n 's/^version: "\(.*\)"$/\1/p' CITATION.cff)" "$ver"
+          expect CITATION.cff "date-released" "$(sed -n 's/^date-released: "\(.*\)"$/\1/p' CITATION.cff)" "$date"
+          expect CHANGELOG.md "latest release" "$(grep -m1 -E '^## \[[0-9]' CHANGELOG.md)" "## [$ver] - $date"
+          if [[ $GITHUB_REF_TYPE == tag ]]; then
+            expect ndm_domain-health-check.sh "tag" "$GITHUB_REF_NAME" "v$ver"
+          fi
+          exit "$fail"
 
   smoke:
     runs-on: ubuntu-24.04
