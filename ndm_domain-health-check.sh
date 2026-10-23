@@ -59,6 +59,7 @@ APP_LICENSE="AGPL-3.0-or-later"
 #                                (saving with -o always does it)
 #          -a, --all             check the domain given and every domain of RELATED_DOMAINS, and
 #                                print one summary table (brief checks, run four at a time)
+#
 #          --requirements        show the needed tools and how to install them
 #          -v, --version         show name, version, author, license and disclaimer
 #          -h, --help            show this help
