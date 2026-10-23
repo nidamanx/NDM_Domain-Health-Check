@@ -63,7 +63,7 @@ nameserver autoritativi, resolver pubblico, server web o di posta, servizio este
 | 12 | Certificate Transparency | Ogni nome che ha avuto un certificato (crt.sh), se è ancora valido e ancora nel DNS; CNAME che puntano a un bersaglio inesistente (rischio di subdomain takeover); *solo domini tuoi:* HTTPS di ogni nome attivo, CNAME verso servizi che segnalano il sito come non rivendicato |
 | 13 | Note per i cambi di provider | Cosa fare, per la configurazione di *questo* dominio, se cambi registrar, provider DNS, hosting o server di posta, e come disattivare DNSSEC o MTA-STS senza rischi (vedi [Operazioni delicate](#operazioni-delicate)) |
 | 14 | Come correggere | Passi pratici per i risultati precedenti, dai più urgenti, con i valori pronti da copiare (vedi sotto) |
-| 15 | Cambiamenti | Con `-o` o `--compare`: cosa è cambiato dall'ultimo report salvato (nameserver, DS, MX, SPF, DMARC, DKIM, certificati…) |
+| 15 | Cambiamenti | Con `--output` o `--compare`: cosa è cambiato dall'ultimo report salvato (nameserver, DS, MX, SPF, DMARC, DKIM, certificati…) |
 
 Un **riepilogo** finale elenca errori, avvisi, voci da verificare e possibili
 miglioramenti.
@@ -203,7 +203,7 @@ in automatico.
 |---------|-------------|
 | `-p`, `--passive` | Solo interrogazioni DNS e normali visite web: nessuna richiesta AXFR, nessuna prova di TLS obsoleti, nessuna connessione alle porte di posta |
 | `-b`, `--brief` | Solo diagnosi: salta le sezioni 13 (note per i cambi di provider) e 14 (come correggere) |
-| `-c`, `--compare` | Mostra cosa è cambiato dall'ultimo report salvato del dominio (salvando con `-o` lo fa sempre) |
+| `-c`, `--compare` | Mostra cosa è cambiato dall'ultimo report salvato del dominio (salvando con `--output` lo fa sempre) |
 | `-a`, `--all` | Controlla il dominio indicato e ogni dominio di `RELATED_DOMAINS`, quattro alla volta, e stampa una tabella riassuntiva |
 | `-r`, `--related-domains ELENCO` | I tuoi altri domini, separati da virgola o spazio. Un IP che invia posta, il cui DNS inverso è un host confermato di uno di essi, viene riconosciuto come tuo. Ha la precedenza su `RELATED_DOMAINS` |
 | `-o`, `--output` | Salva il report anche come testo semplice (vedi [Salvare i report](#salvare-i-report)) |
@@ -319,14 +319,14 @@ Report saved to: /percorso/NDM_Domain-Health-Check/reports/example.com_20261014-
   privato (modo 600: contiene i dati reali del tuo dominio) e un file esistente non viene mai
   sovrascritto.
 - Ogni report salvato termina con righe `#NDM_FACT`, precedute da alcune righe `#NDM_NOTE` che
-  le spiegano (entrambe nascoste a schermo). La volta dopo, con `-o` o
-  `--compare`, lo script si confronta con l'ultimo report dello stesso dominio e stampa la
-  sezione 15: cambiamenti di nameserver, DS, MX, SPF, DMARC, DKIM, CAA e simili sono segnati
-  come "da verificare".
+  le spiegano (entrambe nascoste a schermo). La volta dopo, con `--output` o `--compare`, lo
+  script si confronta con l'ultimo report dello stesso dominio e stampa la sezione 15:
+  cambiamenti di nameserver, DS, MX, SPF, DMARC, DKIM, CAA e simili sono segnati come "da
+  verificare".
 - Cartella predefinita: `reports/` accanto allo script. Viene distribuita vuota (nel
   repository c'è solo il segnaposto `.gitkeep`); i report salvati lì sono ignorati da
   Git.
-- `OUTPUT_DIR` nel file di configurazione la cambia in modo permanente; `-d`/`--output-dir
+- `OUTPUT_DIR` nel file di configurazione la cambia in modo permanente; `--output-dir
   CARTELLA` la cambia per una sola esecuzione (una `CARTELLA` relativa parte dalla
   cartella corrente).
 
@@ -432,7 +432,7 @@ irraggiungibile per ore o giorni. La sezione 13 del report elenca questi passi p
 dominio analizzato, con i suoi valori reali (TTL, `max_age`, selettori); qui trovi il
 riferimento completo.
 
-Prima di qualsiasi cambio, salva un report dello stato attuale (`-o`): è l'elenco di ciò
+Prima di qualsiasi cambio, salva un report dello stato attuale (`--output`): è l'elenco di ciò
 che dopo deve essere ancora al suo posto. Dopo ogni passo, rilancia lo script.
 
 ### Cambio di registrar

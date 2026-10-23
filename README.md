@@ -58,7 +58,7 @@ authoritative nameservers, public resolver, web or mail server, external service
 | 12 | Certificate Transparency | Every name that ever had a certificate (crt.sh), whether it is still valid and still in DNS; CNAMEs that point to a target that does not exist (subdomain takeover risk); *own domains only:* HTTPS of every live name, CNAMEs to services that report the site as unclaimed |
 | 13 | Provider change notes | What to do, for *this* domain's setup, when changing registrar, DNS provider, hosting or mail server, and how to turn DNSSEC or MTA-STS off safely (see [Delicate operations](#delicate-operations)) |
 | 14 | How to fix | Practical steps for the findings above, most urgent first, with the values ready to copy (see below) |
-| 15 | Changes | With `-o` or `--compare`: what changed since the last saved report (nameservers, DS, MX, SPF, DMARC, DKIM, certificates…) |
+| 15 | Changes | With `--output` or `--compare`: what changed since the last saved report (nameservers, DS, MX, SPF, DMARC, DKIM, certificates…) |
 
 A final **summary** lists errors, warnings, items to check and possible improvements.
 
@@ -192,7 +192,7 @@ not a subdomain: `www`, the MX and the other names are checked automatically.
 |--------|-------------|
 | `-p`, `--passive` | DNS lookups and normal web visits only: no AXFR request, no obsolete-TLS test, no connections to mail ports |
 | `-b`, `--brief` | Diagnosis only: skip sections 13 (provider change notes) and 14 (how to fix) |
-| `-c`, `--compare` | Show what changed since the last saved report of the domain (saving with `-o` always does it) |
+| `-c`, `--compare` | Show what changed since the last saved report of the domain (saving with `--output` always does it) |
 | `-a`, `--all` | Check the domain given and every domain in `RELATED_DOMAINS`, four at a time, and print one summary table |
 | `-r`, `--related-domains LIST` | Your other domains, comma or space separated. A mail-sending IP whose reverse DNS is a forward-confirmed host of one of them is recognized as yours. Overrides `RELATED_DOMAINS` |
 | `-o`, `--output` | Also save the report as plain text (see [Saving reports](#saving-reports)) |
@@ -306,12 +306,12 @@ Report saved to: /path/to/NDM_Domain-Health-Check/reports/example.com_20261014-1
 - File name: `<domain>_<YYYYMMDD>-<HHMMSS>.txt`, plain text (colors removed). The file is
   private (mode 600: it holds your domain's real data) and an existing file is never overwritten.
 - Each saved report ends with `#NDM_FACT` lines, introduced by a few `#NDM_NOTE` lines that
-  explain them (both hidden on screen). The next run with `-o` or
-  `--compare` compares itself with the latest report of the same domain and prints section 15:
-  nameservers, DS, MX, SPF, DMARC, DKIM, CAA and similar changes are marked "to check".
+  explain them (both hidden on screen). The next run with `--output` or `--compare` compares
+  itself with the latest report of the same domain and prints section 15: nameservers, DS,
+  MX, SPF, DMARC, DKIM, CAA and similar changes are marked "to check".
 - Default directory: `reports/` next to the script. It ships empty (only a `.gitkeep`
   placeholder is versioned); the reports saved in it are ignored by Git.
-- `OUTPUT_DIR` in the config file changes it permanently; `-d`/`--output-dir DIR` changes it
+- `OUTPUT_DIR` in the config file changes it permanently; `--output-dir DIR` changes it
   for one run (a relative `DIR` starts from the current directory).
 
 ## Sample output
@@ -414,7 +414,7 @@ unreachable for hours or days. Section 13 of the report lists these steps for th
 domain being checked, with its real values (TTLs, `max_age`, selectors); this is the
 complete reference.
 
-Before any change, save a report of the current state (`-o`): it is the list of what
+Before any change, save a report of the current state (`--output`): it is the list of what
 must still be in place afterwards. After every step, run the script again.
 
 ### Changing registrar
