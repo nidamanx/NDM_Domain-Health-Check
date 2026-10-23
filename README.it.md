@@ -3,7 +3,7 @@
 [English](README.md) · **Italiano**
 
 [![License: AGPL v3+](https://img.shields.io/badge/License-AGPL_v3%2B-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.2.0-informational)
+![Version](https://img.shields.io/badge/version-2.0.0-informational)
 ![Shell](https://img.shields.io/badge/shell-bash-4EAA25)
 
 **NDM Domain Health Check** controlla registrazione, DNS, DNSSEC, web/TLS e posta di un dominio
@@ -359,7 +359,7 @@ Un report ridotto, prodotto in modalità passiva, quella predefinita per qualsia
 
 ```
 ══════════════════════════════════════════════════════════════════════
-  NDM Domain Health Check (1.2.0)
+  NDM Domain Health Check (2.0.0)
   Domain: EXAMPLE.COM
   Mode: passive (no AXFR, no obsolete-TLS test, no mail port connections)
         Your own domain? --active, or list it in ACTIVE_DOMAINS
