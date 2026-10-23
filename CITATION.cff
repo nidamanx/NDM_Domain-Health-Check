@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, or parts of its code, please cite it as below."
+type: software
+title: "NDM Domain Health Check"
+abstract: >-
+  A single Bash script that audits a domain (registration, DNS, DNSSEC, web/TLS, mail,
+  blocklists, IP ownership, CAA, Certificate Transparency) and prints a graded report
+  that states the source of every value.
+authors:
+  - given-names: "Nicola Davide"
+    family-names: "Mannarelli"
+    alias: "nidamanx"
+repository-code: "https://github.com/nidamanx/NDM_Domain-Health-Check"
+url: "https://github.com/nidamanx/NDM_Domain-Health-Check"
+license: AGPL-3.0-or-later
+version: "1.1.0"
+date-released: "2026-10-21"
+keywords:
+  - dns
+  - dnssec
+  - email-security
+  - spf
+  - dkim
+  - dmarc
+  - tls
+  - certificate-transparency
+  - bash
+  - sysadmin

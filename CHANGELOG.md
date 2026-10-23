@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `-d` as short form of `--output-dir`.
+- `CITATION.cff`, so GitHub shows a **Cite this repository** button, and a request in the
+  README to credit the author when the tool or its code is reused.
 - Saved reports explain their comparison data: a few `#NDM_NOTE` lines precede the
   `#NDM_FACT` lines (both hidden on screen). Reports saved by earlier versions are still
   compared as before.

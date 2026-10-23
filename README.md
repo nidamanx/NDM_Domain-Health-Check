@@ -655,6 +655,7 @@ NDM_Domain-Health-Check/
 ├── .gitignore
 ├── LICENSE                               GNU AGPL v3
 ├── CHANGELOG.md                          changes in each version
+├── CITATION.cff                          how to cite this software (used by GitHub)
 ├── SECURITY.md                           how to report a vulnerability
 ├── README.md                             documentation in English
 └── README.it.md                          documentation in Italian
@@ -675,6 +676,12 @@ This program is free software: you can redistribute it and/or modify it under th
 terms of the **GNU Affero General Public License** as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later version
 (`SPDX-License-Identifier: AGPL-3.0-or-later`). See the [LICENSE](LICENSE) file.
+
+**Credit.** If you use this tool, or parts of its code, in your work or in another
+project, please credit *NDM Domain Health Check* by Nicola Davide Mannarelli and link to
+this repository. The **Cite this repository** button on GitHub, generated from
+[CITATION.cff](CITATION.cff), gives a ready-made citation. The license already requires
+redistributed and modified copies to keep the copyright notice.
 
 **Disclaimer.** This software is provided "as is", without warranty of any kind,
 express or implied. In no event shall the author be liable for any claim, damages or
