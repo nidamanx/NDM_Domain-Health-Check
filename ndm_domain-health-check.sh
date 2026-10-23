@@ -1622,7 +1622,7 @@ done
 
 # Portfolio: one brief check per domain, a table at the end.
 portfolio() {
-  local list="" d i=0 args facts rc f name err warn chk tip active=""
+  local list="" d i=0 args facts rc f err warn chk tip active=""
   [[ -n $domain ]] && list=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]')
   for d in $RELATED_DOMAINS; do
     [[ $d == -* ]] && continue
@@ -4066,7 +4066,7 @@ if ((TIP_COUNT)); then
 fi
 rule; printf '\n'
 
-fact '~err' "$FAIL_COUNT"; fact '~warn' "$WARN_COUNT"; fact '~check' "$CHECK_COUNT"; fact '~tip' "$TIP_COUNT"; fact '~ok' "$OK_COUNT"
+fact '~err' "$FAIL_COUNT"; fact '~warn' "$WARN_COUNT"; fact '~check' "$CHECK_COUNT"; fact '~tip' "$TIP_COUNT"
 if [[ -n ${_NDM_SAVE:-} ]]; then
   printf '#NDM_NOTE %s\n' \
     "Comparison data, hidden on screen: values found by this run." \
