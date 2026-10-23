@@ -72,3 +72,11 @@ jobs:
         run: |
           rc=0; ./ndm_domain-health-check.sh --nope || rc=$?
           test "$rc" -eq 2
+      - name: Conflicting modes exit with 2
+        run: |
+          rc=0; ./ndm_domain-health-check.sh --active --passive example.com || rc=$?
+          test "$rc" -eq 2
+      - name: -A with an all-uppercase domain (CAPS LOCK) exits with 2
+        run: |
+          rc=0; ./ndm_domain-health-check.sh -A EXAMPLE.COM || rc=$?
+          test "$rc" -eq 2

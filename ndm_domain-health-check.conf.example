@@ -20,6 +20,17 @@
 # Default: none. Taken only from this file or from --related-domains.
 #RELATED_DOMAINS="example.net example.org"
 
+# Your own domains to check in active mode without --active, space or comma separated,
+# exact names (a subdomain is not included). Every other domain is checked in passive mode,
+# so a domain that is not yours is never probed by mistake.
+# Active mode adds checks a server owner can read as a scan: AXFR request, obsolete TLS and
+# weak cipher tests, connections to the mail ports, probes of the nameservers and of every
+# live name found in the CT logs. List here ONLY domains you own or manage.
+# --passive on the command line still wins. --all checks each domain in its own mode.
+# Default: none (passive for every domain). Taken only from this file, never from the
+# environment.
+#ACTIVE_DOMAINS="example.com example.net"
+
 # Validating resolver used for the checks (it must validate DNSSEC).
 # Default: 9.9.9.10, Quad9 (Swiss non-profit foundation): validates DNSSEC and, unlike
 # 9.9.9.9, does not block the domains it considers malicious, so those are still checked.

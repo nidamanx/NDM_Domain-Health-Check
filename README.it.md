@@ -43,7 +43,8 @@ pubblica.
 - [Salvare i report](#salvare-i-report)
 - [Esempio di output](#esempio-di-output)
 - [Operazioni delicate](#operazioni-delicate)
-- [Uso responsabile e controllo passivo](#uso-responsabile-e-controllo-passivo)
+- [Controllo passivo e attivo](#controllo-passivo-e-attivo)
+  - [Uso responsabile](#uso-responsabile)
 - [Servizi esterni contattati](#servizi-esterni-contattati)
 - [Codici di uscita](#codici-di-uscita)
 - [Struttura del progetto](#struttura-del-progetto)
@@ -62,15 +63,15 @@ nameserver autoritativi, resolver pubblico, server web o di posta, servizio este
 | 1 | Registrazione | Registrar, intestatario (se pubblicato), creazione, scadenza con i giorni rimanenti, stato e blocco dei trasferimenti (via RDAP, altrimenti WHOIS) |
 | 2 | Disponibilità | Ping, sito online con codice HTTP e tempo di risposta, servizio di posta raggiungibile |
 | 3 | Registro (delega) | Nameserver e record DS così come li pubblica il registro del dominio di primo livello, record glue, scadenza dei domini che ospitano i nameserver |
-| 4 | DNS autoritativi | Seriale SOA uguale su tutti i nameserver, nameserver nella zona e al registry, record glue, DNS su TCP, diversità dei nameserver, timer SOA, wildcard e TTL, trasferimento di zona (AXFR) rifiutato, DNSKEY; ricorsione aperta e versione del software dei nameserver *(solo domini tuoi)* |
+| 4 | DNS autoritativi | Seriale SOA uguale su tutti i nameserver, nameserver nella zona e al registry, record glue, DNS su TCP, diversità dei nameserver, timer SOA, wildcard e TTL, trasferimento di zona (AXFR) rifiutato, DNSKEY; ricorsione aperta e versione del software dei nameserver *(solo in modalità attiva)* |
 | 5 | DNSSEC | Ogni DS confrontato con le chiavi pubblicate (scopre algoritmo o digest sbagliati), elencabilità della zona (NSEC/NSEC3), durata delle firme, algoritmi in uso, CDS/CDNSKEY, parametri NSEC3, validazione completa |
-| 6 | Web e TLS | A/AAAA, redirect da HTTP a HTTPS, HSTS, header di sicurezza, versione TLS, emittente, nomi e scadenza del certificato, certificati di `www`/`mail`/`webmail`, versione HTTP, flag dei cookie, `security.txt`, versioni del software negli header, HSTS preload, chiave, firma, durata e catena del certificato, TLS 1.0/1.1 obsoleti e suite di cifratura deboli *(solo domini tuoi)* |
+| 6 | Web e TLS | A/AAAA, redirect da HTTP a HTTPS, HSTS, header di sicurezza, versione TLS, emittente, nomi e scadenza del certificato, certificati di `www`/`mail`/`webmail`, versione HTTP, flag dei cookie, `security.txt`, versioni del software negli header, HSTS preload, chiave, firma, durata e catena del certificato, TLS 1.0/1.1 obsoleti e suite di cifratura deboli *(solo in modalità attiva)* |
 | 7 | Posta (DNS) | MX, SPF espanso per intero (ogni `include` fino alle reti, etichette facoltative per i tuoi provider, conteggio esatto delle ricerche DNS), mittenti autorizzati dall'SPF e loro coerenza con gli host del dominio, DMARC (policy dei sottodomini, `pct`, allineamento, indirizzi dei report presso altri domini che non li autorizzano), DKIM (dimensione della chiave, modalità di prova, chiavi revocate), MTA-STS, TLS-RPT, BIMI |
-| 8 | Server di posta | Porte 25, 465, 587, 993, 995, 143, 110: STARTTLS / TLS, certificato, login offerto prima della cifratura, login in chiaro, banner SMTP e `VRFY`/`EXPN`, record TLSA confrontati con il certificato mostrato *(solo domini tuoi)* |
+| 8 | Server di posta | Porte 25, 465, 587, 993, 995, 143, 110: STARTTLS / TLS, certificato, login offerto prima della cifratura, login in chiaro, banner SMTP e `VRFY`/`EXPN`, record TLSA confrontati con il certificato mostrato *(solo in modalità attiva)* |
 | 9 | Blocklist | IP che inviano posta presenti nelle DNSBL più comuni (la PBL di Spamhaus è distinta dagli inserimenti veri), IPv6 dove la lista lo supporta, e il nome del dominio nelle blocklist di domini |
 | 10 | Indirizzi IP | Proprietario, rete, ASN e contatto abuse (RDAP tramite il bootstrap IANA, RIPEstat); DNS inverso presente, confermato, generico o del provider |
 | 11 | CAA | Quali autorità di certificazione possono emettere certificati per il dominio |
-| 12 | Certificate Transparency | Ogni nome che ha avuto un certificato (crt.sh), se è ancora valido e ancora nel DNS; CNAME che puntano a un bersaglio inesistente (rischio di subdomain takeover); *solo domini tuoi:* HTTPS di ogni nome attivo, CNAME verso servizi che segnalano il sito come non rivendicato |
+| 12 | Certificate Transparency | Ogni nome che ha avuto un certificato (crt.sh), se è ancora valido e ancora nel DNS, con un link a crt.sh quando alcuni nomi non sono elencati o la ricerca non è stata possibile; CNAME che puntano a un bersaglio inesistente (rischio di subdomain takeover); *solo in modalità attiva:* HTTPS di ogni nome attivo, CNAME verso servizi che segnalano il sito come non rivendicato |
 | 13 | Note per i cambi di provider | Cosa fare, per la configurazione di *questo* dominio, se cambi registrar, provider DNS, hosting o server di posta, e come disattivare DNSSEC o MTA-STS senza rischi (vedi [Operazioni delicate](#operazioni-delicate)) |
 | 14 | Come correggere | Passi pratici per i risultati precedenti, dai più urgenti, con i valori pronti da copiare (vedi sotto) |
 | 15 | Cambiamenti | Con `--output` o `--compare`: cosa è cambiato dall'ultimo report salvato (nameserver, DS, MX, SPF, DMARC, DKIM, certificati…) |
@@ -211,11 +212,12 @@ in automatico.
 
 | Opzione | Descrizione |
 |---------|-------------|
-| `-p`, `--passive` | Solo interrogazioni DNS e normali visite web: nessuna richiesta AXFR, nessuna prova di TLS obsoleti, nessuna connessione alle porte di posta |
+| `-A`, `--active` | Modalità attiva per questa esecuzione: aggiunge AXFR, prove di TLS obsoleti e cifrari deboli, connessioni alle porte di posta e altre sonde sui server. **Solo per domini che possiedi o gestisci** (vedi [Controllo passivo e attivo](#controllo-passivo-e-attivo)) |
+| `-p`, `--passive` | Modalità passiva per questa esecuzione (quella predefinita), anche per un dominio elencato in `ACTIVE_DOMAINS`: solo interrogazioni DNS, registri pubblici e normali visite web |
 | `-b`, `--brief` | Solo diagnosi: salta le sezioni 13 (note per i cambi di provider) e 14 (come correggere) |
 | `-c`, `--compare` | Mostra cosa è cambiato dall'ultimo report salvato del dominio (salvando con `--output` lo fa sempre) |
-| `-a`, `--all` | Controlla il dominio indicato e ogni dominio di `RELATED_DOMAINS`, quattro alla volta, e stampa una tabella riassuntiva |
-| `-r`, `--related-domains ELENCO` | I tuoi altri domini, separati da virgola o spazio. Un IP che invia posta, il cui DNS inverso è un host confermato di uno di essi, viene riconosciuto come tuo. Ha la precedenza su `RELATED_DOMAINS` |
+| `-a`, `--all` | Controlla il dominio indicato e ogni dominio di `RELATED_DOMAINS`, quattro alla volta, ognuno nella sua modalità, e stampa una tabella riassuntiva |
+| `-r`, `--related-domains ELENCO` | I tuoi altri domini, separati da virgola o spazio. Un IP che invia posta, il cui DNS inverso è un host confermato di uno di essi, viene riconosciuto come tuo. Ha la precedenza su `RELATED_DOMAINS`; `-r ''` lo ignora per una sola esecuzione (per esempio quando controlli un dominio che non è tuo) |
 | `-o`, `--output` | Salva il report anche come testo semplice (vedi [Salvare i report](#salvare-i-report)) |
 | `-d`, `--output-dir CARTELLA` | Salva il report in `CARTELLA` (implica `--output`) |
 | `--requirements` | Mostra gli strumenti necessari e come installarli |
@@ -225,11 +227,11 @@ in automatico.
 Esempi:
 
 ```bash
-# Controllo completo del TUO dominio (sostituisci example.com con il tuo)
-./ndm_domain-health-check.sh example.com
+# Qualsiasi dominio: controllo passivo (predefinito)
+./ndm_domain-health-check.sh example.org
 
-# Un dominio che non è tuo: controllo passivo
-./ndm_domain-health-check.sh --passive example.org
+# Controllo completo del TUO dominio (sostituisci example.com con il tuo): modalità attiva
+./ndm_domain-health-check.sh --active example.com
 
 # Il tuo dominio; gli host dei tuoi altri domini sono riconosciuti come tuoi
 ./ndm_domain-health-check.sh --related-domains "example.net example.org" example.com
@@ -239,8 +241,8 @@ Esempi:
 ```
 
 I nomi `example.*` qui sopra sono segnaposto riservati alla documentazione (RFC 2606):
-esegui il controllo completo solo sui domini che possiedi o gestisci, e `--passive` su
-tutti gli altri (vedi [Uso responsabile e controllo passivo](#uso-responsabile-e-controllo-passivo)).
+usa `--active` solo sui domini che possiedi o gestisci, oppure elencali in `ACTIVE_DOMAINS`
+(vedi [Controllo passivo e attivo](#controllo-passivo-e-attivo)).
 Alcune reti bloccano le connessioni in uscita verso la porta 25: da lì i controlli dei
 server di posta possono dare la porta 25 irraggiungibile anche quando funziona.
 
@@ -260,6 +262,7 @@ questo è elencato in `.gitignore`: nel repository va solo il modello `.example`
 | Chiave | Predefinito | Descrizione |
 |--------|-------------|-------------|
 | `RELATED_DOMAINS` | *(nessuno)* | I tuoi altri domini (vedi `--related-domains`) |
+| `ACTIVE_DOMAINS` | *(nessuno)* | I tuoi domini, controllati in modalità attiva senza `--active`; ogni altro dominio resta passivo (vedi [Controllo passivo e attivo](#controllo-passivo-e-attivo)) |
 | `RESOLVER` | `9.9.9.10` | Resolver che valida DNSSEC usato per i controlli (Quad9 senza filtro malware, vedi [Servizi esterni contattati](#servizi-esterni-contattati)) |
 | `DKIM_SELECTORS` | i più comuni (vedi il modello) | Selettori DKIM da cercare: il DNS non permette di elencarli, quindi aggiungi il tuo se non viene trovato |
 | `OUTPUT_DIR` | `reports` | Cartella per `--output`; i percorsi relativi partono dalla cartella dello script |
@@ -277,10 +280,10 @@ predefiniti. Per una singola esecuzione puoi passare un'impostazione nell'ambien
 RESOLVER=127.0.0.1 ./ndm_domain-health-check.sh example.com
 ```
 
-`RELATED_DOMAINS` è l'eccezione: viene letto **solo** dal file di configurazione o da
-`--related-domains`, mai dall'ambiente, così una variabile rimasta esportata nella
-shell non può cambiare i risultati senza che tu te ne accorga. Se è commentato o
-assente, non ci sono domini collegati.
+`RELATED_DOMAINS` e `ACTIVE_DOMAINS` sono l'eccezione: vengono letti **solo** dal file di
+configurazione (`RELATED_DOMAINS` anche da `--related-domains`), mai dall'ambiente, così una
+variabile rimasta esportata nella shell non può cambiare i risultati senza che tu te ne
+accorga, né attivare i controlli attivi. Se sono commentati o assenti, l'elenco è vuoto.
 
 ### Scegliere il resolver per le blocklist
 
@@ -348,20 +351,20 @@ Report saved to: /percorso/NDM_Domain-Health-Check/reports/example.com_20261014-
 > che lo script mostra oggi. Anche l'impaginazione del report può cambiare tra una
 > versione e l'altra. Il report è in inglese, come lo script.
 
-Un report ridotto, prodotto in modalità passiva come per qualsiasi dominio che non è
-tuo:
+Un report ridotto, prodotto in modalità passiva, quella predefinita per qualsiasi dominio:
 
 ```bash
-./ndm_domain-health-check.sh --passive example.com
+./ndm_domain-health-check.sh example.com
 ```
 
 ```
 ══════════════════════════════════════════════════════════════════════
   NDM Domain Health Check (1.2.0)
   Domain: EXAMPLE.COM
+  Mode: passive (no AXFR, no obsolete-TLS test, no mail port connections)
+        Your own domain? --active, or list it in ACTIVE_DOMAINS
   Resolver: 9.9.9.10  ·  2026-10-14 12:23
   ✔ ok  ↑ improvable  ◆ to check  ⚠ warning  ✘ error  ℹ info
-  Mode: passive (no AXFR, no obsolete-TLS test, no mail port connections)
 ══════════════════════════════════════════════════════════════════════
 
 [3] REGISTRY (DELEGATION)
@@ -596,25 +599,73 @@ Pubblica la nuova chiave con un selettore **nuovo**, fai firmare con quella, e t
 vecchia solo una settimana dopo: la posta già inviata viene ancora verificata con la
 vecchia.
 
-## Uso responsabile e controllo passivo
+## Controllo passivo e attivo
 
-Quasi tutto ciò che lo script legge è pubblico per sua natura: record DNS, dati di
-registrazione, certificati, header HTTP, blocklist. Alcuni controlli vanno un passo
-oltre e si eseguono normalmente sui **tuoi** domini, o su domini che gestisci con il
-consenso del proprietario:
+Lo script ha due modalità: **passiva** è quella predefinita, **attiva** va richiesta. I nomi
+sono quelli usuali della ricognizione in ambito sicurezza: la passiva legge ciò che è
+pubblico, l'attiva interroga direttamente i server del dominio.
+
+**Modalità passiva (predefinita)**: fa solo ciò che qualunque visitatore, browser o server
+di posta fa ogni giorno:
+
+- interrogazioni DNS, tramite il resolver e verso i nameserver del registro e autoritativi;
+- registri e log pubblici: dati di registrazione (RDAP/WHOIS), proprietari degli IP
+  (RIPEstat), Certificate Transparency (crt.sh), blocklist DNS;
+- normali visite web: richieste HTTP e HTTPS al dominio e a `www`, `mail` e `webmail` con un
+  client TLS moderno (header, certificato, `security.txt`, la policy MTA-STS), e ping.
+
+**Modalità attiva**: aggiunge i controlli che vanno un passo oltre:
 
 - **AXFR**: chiede a ogni nameserver l'intera zona (un server configurato bene rifiuta);
-- **TLS obsoleti**: prova una connessione TLS 1.0/1.1;
-- **porte di posta**: si collega alle porte 25, 465, 587, 993, 995, 143 e 110 e ne legge
-  le funzionalità. Non tenta mai un login e non usa credenziali;
-- **sonde sui server**: suite di cifratura deboli sulle porte TLS di web e posta, il banner SMTP e
-  i comandi `VRFY`/`EXPN`, ricorsione e `version.bind` sui nameserver, TLS su ogni nome attivo
-  trovato nei log CT, e una richiesta web ai nomi il cui CNAME punta a un servizio dove i siti
-  possono essere rivendicati.
+- **nameserver**: ricorsione aperta e versione del software (`version.bind`);
+- **TLS obsoleti e cifrari deboli**: prova connessioni TLS 1.0/1.1 e suite di cifratura
+  deboli sulle porte TLS di web e posta;
+- **porte di posta**: si collega alle porte 25, 465, 587, 993, 995, 143 e 110 e ne legge le
+  funzionalità, il banner SMTP e la risposta a `VRFY`/`EXPN`, e confronta i record TLSA
+  (DANE) con il certificato mostrato. Non tenta mai un login e non usa credenziali;
+- **nomi CT**: una connessione TLS a ogni nome attivo trovato nei log di Certificate
+  Transparency, e una richiesta web ai nomi il cui CNAME punta a un servizio dove i siti
+  possono essere rivendicati (subdomain takeover).
 
-Per i domini che non sono tuoi usa `--passive`: salta tutti. Evita controlli
-ripetuti o di massa su domini di terzi. I dati di registrazione possono contenere dati
-personali (GDPR): leggerli è legittimo, conservarli o riutilizzarli no.
+**Perché sono separate.** Sui tuoi domini questi controlli sono legittimi e utili: trovano
+trasferimenti di zona aperti, protocolli obsoleti e server di posta che accettano login in
+chiaro. Su un dominio che non è tuo sembrano ciò che sono, una scansione: compaiono nei log
+del proprietario, possono far scattare sistemi di rilevamento delle intrusioni o fail2ban (e
+far bloccare il tuo indirizzo), e possono violare le condizioni d'uso della tua rete o del
+dominio controllato. Uno strumento pubblico non deve farlo per sbaglio: è sicuro per
+impostazione predefinita e approfondito su richiesta. Usa la modalità attiva solo sui
+domini che possiedi o gestisci, o con il consenso del proprietario.
+
+**Scegliere la modalità:**
+
+| Come | Modalità |
+|------|----------|
+| `./ndm_domain-health-check.sh example.org` | passiva, per qualsiasi dominio |
+| `--active` (`-A`) | attiva per questa esecuzione |
+| Dominio elencato in `ACTIVE_DOMAINS` (file di configurazione) | attiva, senza `--active` |
+| `--passive` (`-p`) | passiva per questa esecuzione, anche per un dominio di `ACTIVE_DOMAINS` |
+| `--all` | ogni dominio nella sua modalità; la tabella riassuntiva elenca quelli controllati in modalità attiva |
+
+`ACTIVE_DOMAINS` è il modo consigliato per i tuoi domini: vengono sempre controllati per
+intero, e ogni altro dominio resta passivo, così un errore di battitura o un'opzione
+dimenticata non sondano mai il dominio di qualcun altro. Contiene nomi esatti (un
+sottodominio non è incluso) e viene letto solo dal file di configurazione: una variabile
+rimasta esportata nella shell non può mai attivare i controlli attivi. `--active` e
+`--passive` insieme sono un errore.
+
+L'intestazione del report indica sempre la modalità, subito sotto il nome del dominio:
+`Mode: passive` o `Mode: active` (in giallo), seguita da cosa include o esclude.
+
+`-A` è la stessa lettera che nmap usa per la sua scansione aggressiva, ed è il maiuscolo di
+`-a` (`--all`). Con il CAPS LOCK attivo, `-a EXAMPLE.COM` arriverebbe come `-A EXAMPLE.COM`:
+lo script rifiuta un dominio tutto in maiuscolo dopo `-A` ed esce con codice 2. `--active`
+non è interessato, e il dominio si può sempre scrivere in minuscolo.
+
+### Uso responsabile
+
+Evita controlli ripetuti o di massa su domini di terzi, anche in modalità passiva. I dati di
+registrazione possono contenere dati personali (GDPR): leggerli è legittimo, conservarli o
+riutilizzarli no.
 
 Quello che un dominio controllato può far fare allo script è limitato. Ogni connessione (web,
 TLS, porte di posta, ping) va solo verso indirizzi pubblici: un nome del dominio, o un redirect,
@@ -638,7 +689,7 @@ importano mai moduli dalla cartella corrente.
 | RIPEstat (RIPE NCC) | Prefisso annunciato e ASN di origine degli indirizzi IP |
 | crt.sh | Log di Certificate Transparency (`CT_LOOKUP=off` lo salta) |
 | Gestori delle DNSBL (tramite il resolver del tuo sistema, o `DNSBL_RESOLVER`) | Controlli delle blocklist |
-| Server web e di posta del dominio | Controlli HTTP/TLS e di posta (non in modalità passiva, tranne le normali visite web) |
+| Server web e di posta del dominio | Normali visite web; controlli TLS, delle porte di posta e degli altri server solo in modalità attiva |
 
 I valori predefiniti privilegiano enti senza scopo di lucro e servizi gratuiti, e
 ognuno si può cambiare nel file di configurazione:
@@ -669,7 +720,7 @@ quando si trovano nei dati del dominio analizzato.
 |:------:|-------------|
 | `0` | Controllo completato, nessun errore (possono esserci avvisi e suggerimenti) |
 | `1` | Controllo completato con almeno un errore, oppure impossibile da eseguire (strumento obbligatorio mancante, dominio non valido, registro irraggiungibile) |
-| `2` | Uso non valido della riga di comando |
+| `2` | Uso non valido della riga di comando (anche `--active` insieme a `--passive`, e `-A` con un dominio tutto in maiuscolo) |
 
 Così lo script si può usare in un cron o da altri script.
 

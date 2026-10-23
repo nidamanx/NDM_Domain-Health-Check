@@ -31,8 +31,9 @@ Useful details to include:
 - Unsafe handling of the domain name, command-line options, environment or
   configuration file (code execution, injection, writing outside the report
   directory).
-- Active checks run in `--passive` mode (AXFR, obsolete-TLS test, connections
-  to mail ports).
+- Active checks (AXFR, obsolete-TLS test, connections to mail ports) run in
+  passive mode: by default, with `--passive`, or for a domain not listed in
+  `ACTIVE_DOMAINS`.
 - Connections to non-public addresses (loopback, the LAN, other private ranges),
   whether reached through a redirect or through a name of the audited domain;
   redirects to non-HTTP(S) schemes.
@@ -52,7 +53,8 @@ Useful details to include:
 - Results that depend on third-party services (RDAP, WHOIS, crt.sh, RIPEstat,
   DNS blocklists) being unavailable or wrong.
 - Active checks (AXFR, obsolete TLS, mail ports) run against domains you do not
-  own: use `--passive`, as described in the README.
+  own with `--active` or `ACTIVE_DOMAINS`: active mode is only for your own
+  domains, as described in the README.
 
 ## Disclosure
 

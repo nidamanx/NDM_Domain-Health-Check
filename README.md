@@ -37,7 +37,8 @@ and documented for public release; 1.1.0 is its first public version.
 - [Saving reports](#saving-reports)
 - [Sample output](#sample-output)
 - [Delicate operations](#delicate-operations)
-- [Responsible use and passive mode](#responsible-use-and-passive-mode)
+- [Passive and active mode](#passive-and-active-mode)
+  - [Responsible use](#responsible-use)
 - [External services contacted](#external-services-contacted)
 - [Exit codes](#exit-codes)
 - [Project layout](#project-layout)
@@ -56,15 +57,15 @@ authoritative nameservers, public resolver, web or mail server, external service
 | 1 | Registration | Registrar, registrant (when published), creation, expiry with days left, status and transfer lock (via RDAP, falling back to WHOIS) |
 | 2 | Availability | Ping, website online with HTTP code and response time, mail service answering |
 | 3 | Registry (delegation) | Nameservers and DS records as published by the TLD registry itself, glue records, expiry of the domains that host the nameservers |
-| 4 | Authoritative DNS | SOA serial consistency on every nameserver, nameservers in the zone vs. at the registry, glue records, DNS over TCP, nameserver diversity, SOA timers, wildcard and TTLs, zone transfer (AXFR) refused, DNSKEY; open recursion and software version of the nameservers *(own domains only)* |
+| 4 | Authoritative DNS | SOA serial consistency on every nameserver, nameservers in the zone vs. at the registry, glue records, DNS over TCP, nameserver diversity, SOA timers, wildcard and TTLs, zone transfer (AXFR) refused, DNSKEY; open recursion and software version of the nameservers *(active mode only)* |
 | 5 | DNSSEC | Every DS matched against the published keys (catches wrong algorithm or digest), NSEC/NSEC3 zone walking, signature lifetime, algorithms in use, CDS/CDNSKEY, NSEC3 parameters, full validation |
-| 6 | Web & TLS | A/AAAA, HTTP→HTTPS redirect, HSTS, security headers, TLS version, certificate issuer, names and expiry, certificates of `www`/`mail`/`webmail`, HTTP version, cookie flags, `security.txt`, software versions in headers, HSTS preload, certificate key, signature, lifetime and chain, obsolete TLS 1.0/1.1 and weak cipher suites *(own domains only)* |
+| 6 | Web & TLS | A/AAAA, HTTP→HTTPS redirect, HSTS, security headers, TLS version, certificate issuer, names and expiry, certificates of `www`/`mail`/`webmail`, HTTP version, cookie flags, `security.txt`, software versions in headers, HSTS preload, certificate key, signature, lifetime and chain, obsolete TLS 1.0/1.1 and weak cipher suites *(active mode only)* |
 | 7 | Mail (DNS) | MX, SPF fully expanded (every `include` down to the networks, optional labels for your providers, exact DNS lookup count), senders authorized by SPF and their consistency with the domain's hosts, DMARC (subdomain policy, `pct`, alignment, report addresses at other domains that do not authorize them), DKIM (key size, test mode, revoked keys), MTA-STS, TLS-RPT, BIMI |
-| 8 | Mail servers | Ports 25, 465, 587, 993, 995, 143, 110: STARTTLS / TLS, certificate, login offered before encryption, plaintext logins, SMTP banner and `VRFY`/`EXPN`, TLSA records against the certificate shown *(own domains only)* |
+| 8 | Mail servers | Ports 25, 465, 587, 993, 995, 143, 110: STARTTLS / TLS, certificate, login offered before encryption, plaintext logins, SMTP banner and `VRFY`/`EXPN`, TLSA records against the certificate shown *(active mode only)* |
 | 9 | Blocklists | Mail-sending IPs on common DNSBLs (Spamhaus PBL told apart from real listings), IPv6 where the list supports it, and the domain name itself on domain blocklists |
 | 10 | IP addresses | Owner, network, ASN and abuse contact (RDAP via the IANA bootstrap, RIPEstat); reverse DNS present, forward-confirmed, generic or provider-owned |
 | 11 | CAA | Which certificate authorities may issue for the domain |
-| 12 | Certificate Transparency | Every name that ever had a certificate (crt.sh), whether it is still valid and still in DNS; CNAMEs that point to a target that does not exist (subdomain takeover risk); *own domains only:* HTTPS of every live name, CNAMEs to services that report the site as unclaimed |
+| 12 | Certificate Transparency | Every name that ever had a certificate (crt.sh), whether it is still valid and still in DNS, with a link to crt.sh whenever some names are not listed or the search could not run; CNAMEs that point to a target that does not exist (subdomain takeover risk); *active mode only:* HTTPS of every live name, CNAMEs to services that report the site as unclaimed |
 | 13 | Provider change notes | What to do, for *this* domain's setup, when changing registrar, DNS provider, hosting or mail server, and how to turn DNSSEC or MTA-STS off safely (see [Delicate operations](#delicate-operations)) |
 | 14 | How to fix | Practical steps for the findings above, most urgent first, with the values ready to copy (see below) |
 | 15 | Changes | With `--output` or `--compare`: what changed since the last saved report (nameservers, DS, MX, SPF, DMARC, DKIM, certificates…) |
@@ -199,11 +200,12 @@ not a subdomain: `www`, the MX and the other names are checked automatically.
 
 | Option | Description |
 |--------|-------------|
-| `-p`, `--passive` | DNS lookups and normal web visits only: no AXFR request, no obsolete-TLS test, no connections to mail ports |
+| `-A`, `--active` | Active mode for this run: adds AXFR, obsolete-TLS and weak-cipher tests, mail port connections and other server probes. **Only for domains you own or manage** (see [Passive and active mode](#passive-and-active-mode)) |
+| `-p`, `--passive` | Passive mode for this run (the default), even for a domain listed in `ACTIVE_DOMAINS`: DNS lookups, public registries and normal web visits only |
 | `-b`, `--brief` | Diagnosis only: skip sections 13 (provider change notes) and 14 (how to fix) |
 | `-c`, `--compare` | Show what changed since the last saved report of the domain (saving with `--output` always does it) |
-| `-a`, `--all` | Check the domain given and every domain in `RELATED_DOMAINS`, four at a time, and print one summary table |
-| `-r`, `--related-domains LIST` | Your other domains, comma or space separated. A mail-sending IP whose reverse DNS is a forward-confirmed host of one of them is recognized as yours. Overrides `RELATED_DOMAINS` |
+| `-a`, `--all` | Check the domain given and every domain in `RELATED_DOMAINS`, four at a time, each in its own mode, and print one summary table |
+| `-r`, `--related-domains LIST` | Your other domains, comma or space separated. A mail-sending IP whose reverse DNS is a forward-confirmed host of one of them is recognized as yours. Overrides `RELATED_DOMAINS`; `-r ''` ignores it for one run (for example when checking a domain that is not yours) |
 | `-o`, `--output` | Also save the report as plain text (see [Saving reports](#saving-reports)) |
 | `-d`, `--output-dir DIR` | Save the report in `DIR` (implies `--output`) |
 | `--requirements` | Show the needed tools and how to install them |
@@ -213,11 +215,11 @@ not a subdomain: `www`, the MX and the other names are checked automatically.
 Examples:
 
 ```bash
-# Full check of YOUR domain (replace example.com with it)
-./ndm_domain-health-check.sh example.com
+# Any domain: passive mode (the default)
+./ndm_domain-health-check.sh example.org
 
-# A domain that is not yours: passive mode
-./ndm_domain-health-check.sh --passive example.org
+# Full check of YOUR domain (replace example.com with it): active mode
+./ndm_domain-health-check.sh --active example.com
 
 # Your domain; hosts of your other domains are recognized as yours
 ./ndm_domain-health-check.sh --related-domains "example.net example.org" example.com
@@ -227,8 +229,8 @@ Examples:
 ```
 
 The `example.*` names above are placeholders reserved for documentation (RFC 2606):
-run the full check only on domains you own or manage, and `--passive` on all the
-others (see [Responsible use and passive mode](#responsible-use-and-passive-mode)).
+use `--active` only on domains you own or manage, or list them in `ACTIVE_DOMAINS` (see
+[Passive and active mode](#passive-and-active-mode)).
 Some networks block outgoing connections to port 25: from there the mail server
 checks may report port 25 as unreachable even when it works.
 
@@ -248,6 +250,7 @@ never executed**. It is personal (it contains your domains), so it is listed in
 | Key | Default | Description |
 |-----|---------|-------------|
 | `RELATED_DOMAINS` | *(none)* | Your other domains (see `--related-domains`) |
+| `ACTIVE_DOMAINS` | *(none)* | Your own domains, checked in active mode without `--active`; every other domain stays passive (see [Passive and active mode](#passive-and-active-mode)) |
 | `RESOLVER` | `9.9.9.10` | Validating resolver used for the checks (Quad9 without malware filtering, see [External services contacted](#external-services-contacted)) |
 | `DKIM_SELECTORS` | the most common ones (see the template) | DKIM selectors to look for: the DNS cannot list them, so add yours if it is not found |
 | `OUTPUT_DIR` | `reports` | Directory for `--output`; relative paths start from the script's directory |
@@ -265,9 +268,10 @@ For a single run, a setting can be given in the environment:
 RESOLVER=127.0.0.1 ./ndm_domain-health-check.sh example.com
 ```
 
-`RELATED_DOMAINS` is the exception: it is taken **only** from the config file or from
-`--related-domains`, never from the environment, so that a variable left exported in
-the shell cannot silently change the results. Commented out or missing means none.
+`RELATED_DOMAINS` and `ACTIVE_DOMAINS` are the exception: they are taken **only** from the
+config file (`RELATED_DOMAINS` also from `--related-domains`), never from the environment,
+so that a variable left exported in the shell cannot silently change the results or turn
+on the active checks. Commented out or missing means none.
 
 ### Choosing the blocklist resolver
 
@@ -330,19 +334,20 @@ Report saved to: /path/to/NDM_Domain-Health-Check/reports/example.com_20261014-1
 > not the real data of `example.com` and may not match what the script reports today.
 > The layout of the report may also change between versions.
 
-An abridged report produced in passive mode, as for any domain that is not yours:
+An abridged report produced in passive mode, the default for any domain:
 
 ```bash
-./ndm_domain-health-check.sh --passive example.com
+./ndm_domain-health-check.sh example.com
 ```
 
 ```
 ══════════════════════════════════════════════════════════════════════
   NDM Domain Health Check (1.2.0)
   Domain: EXAMPLE.COM
+  Mode: passive (no AXFR, no obsolete-TLS test, no mail port connections)
+        Your own domain? --active, or list it in ACTIVE_DOMAINS
   Resolver: 9.9.9.10  ·  2026-10-14 12:23
   ✔ ok  ↑ improvable  ◆ to check  ⚠ warning  ✘ error  ℹ info
-  Mode: passive (no AXFR, no obsolete-TLS test, no mail port connections)
 ══════════════════════════════════════════════════════════════════════
 
 [3] REGISTRY (DELEGATION)
@@ -567,24 +572,70 @@ would see its mail quarantined or rejected.
 Publish the new key under a **new** selector, switch the signing to it, and remove the
 old key only a week later: mail already sent is still checked against the old one.
 
-## Responsible use and passive mode
+## Passive and active mode
 
-Almost everything the script reads is public by design: DNS records, registration data,
-certificates, HTTP headers, blocklists. A few checks go one step further and are
-normally run on **your own** domains or on domains you manage with the owner's consent:
+The script has two modes: **passive** is the default, **active** must be asked for. The names
+are the usual ones of security reconnaissance: passive reads what is public, active
+interrogates the target's servers directly.
+
+**Passive mode (default)** does only what any visitor, browser or mail sender does every day:
+
+- DNS queries, through the resolver and to the registry and authoritative nameservers;
+- public registries and logs: registration data (RDAP/WHOIS), IP ownership (RIPEstat),
+  Certificate Transparency (crt.sh), DNS blocklists;
+- normal web visits: HTTP and HTTPS requests to the domain and to `www`, `mail` and
+  `webmail` with a modern TLS client (headers, certificate, `security.txt`, the MTA-STS
+  policy), and ping.
+
+**Active mode** adds the checks that go one step further:
 
 - **AXFR**: asks every nameserver for the whole zone (a correctly configured server refuses);
-- **obsolete TLS**: tries a TLS 1.0/1.1 handshake;
+- **nameservers**: open recursion and software version (`version.bind`);
+- **obsolete TLS and weak ciphers**: tries TLS 1.0/1.1 handshakes and weak cipher suites on
+  the web and mail TLS ports;
 - **mail ports**: connects to ports 25, 465, 587, 993, 995, 143 and 110 and reads their
-  capabilities. No login is ever attempted and no credentials are used;
-- **server probes**: weak cipher suites on the web and mail TLS ports, the SMTP banner and
-  the `VRFY`/`EXPN` commands, recursion and `version.bind` on the nameservers, TLS on every live
-  name found in the CT logs, and a web request to names whose CNAME points to a service where
-  sites can be claimed.
+  capabilities, the SMTP banner and the answer to `VRFY`/`EXPN`, and checks the TLSA (DANE)
+  records against the certificate shown. No login is ever attempted and no credentials are used;
+- **CT names**: a TLS connection to every live name found in the Certificate Transparency
+  logs, and a web request to names whose CNAME points to a service where sites can be
+  claimed (subdomain takeover).
 
-For domains that are not yours, use `--passive`: it skips all of them. Avoid repeated or
-mass checks of third-party domains. Registration data may include personal data
-(GDPR): reading it is legitimate, storing or reusing it is not.
+**Why they are separate.** On your own domains these checks are legitimate and useful: they
+find open zone transfers, obsolete protocols and mail servers that accept plaintext logins.
+On a domain that is not yours they look like what they are, a scan: they show up in the
+owner's logs, can trigger intrusion detection or fail2ban (and get your address blocked), and
+may break the acceptable use policy of your network or of the target. A public tool should
+not do that by accident, so it is safe by default and thorough on request. Run active mode
+only on domains you own or manage, or with the owner's consent.
+
+**Choosing the mode:**
+
+| How | Mode |
+|-----|------|
+| `./ndm_domain-health-check.sh example.org` | passive, for any domain |
+| `--active` (`-A`) | active for this run |
+| Domain listed in `ACTIVE_DOMAINS` (config file) | active, without `--active` |
+| `--passive` (`-p`) | passive for this run, even for a domain in `ACTIVE_DOMAINS` |
+| `--all` | each domain in its own mode; the summary table lists the ones checked in active mode |
+
+`ACTIVE_DOMAINS` is the recommended way for your own domains: they are always checked in
+full, and any other domain stays passive, so a typo or a forgotten option never probes
+someone else's domain. It holds exact names (a subdomain is not included) and is read only
+from the config file: a variable left exported in the shell can never turn on the active
+checks. `--active` and `--passive` together are an error.
+
+The report header always states the mode, right under the domain name: `Mode: passive`
+or `Mode: active` (in yellow), followed by what it includes or leaves out.
+
+`-A` is the same letter nmap uses for its aggressive scan, and the uppercase of `-a`
+(`--all`). With CAPS LOCK on, `-a EXAMPLE.COM` would arrive as `-A EXAMPLE.COM`: the script
+refuses an all-uppercase domain after `-A` and exits with code 2. `--active` is not affected,
+and the domain can always be written in lowercase.
+
+### Responsible use
+
+Avoid repeated or mass checks of third-party domains, even in passive mode. Registration
+data may include personal data (GDPR): reading it is legitimate, storing or reusing it is not.
 
 What a scanned domain can make the script do is limited. Every connection (web, TLS, mail
 ports, ping) goes only to public addresses: a name of the domain, or a redirect, that resolves
@@ -607,7 +658,7 @@ Python helpers run in isolated mode, so they never import modules from the curre
 | RIPEstat (RIPE NCC) | Announced prefix and origin ASN of IP addresses |
 | crt.sh | Certificate Transparency logs (`CT_LOOKUP=off` skips it) |
 | DNSBL operators (via your system resolver, or `DNSBL_RESOLVER`) | Blocklist checks |
-| The domain's web and mail servers | HTTP/TLS and mail checks (not in passive mode, except normal web visits) |
+| The domain's web and mail servers | Normal web visits; TLS, mail port and other server checks in active mode only |
 
 The defaults favour non-profit operators and services that are free to use, and every
 one of them can be changed in the configuration file:
@@ -636,7 +687,7 @@ in the data of the domain being checked.
 |:----:|---------|
 | `0` | Check completed, no errors (warnings and tips may be present) |
 | `1` | Check completed with at least one error, or it could not run (missing required tool, invalid domain, registry unreachable) |
-| `2` | Invalid command-line usage |
+| `2` | Invalid command-line usage (including `--active` with `--passive`, and `-A` with an all-uppercase domain) |
 
 This makes the script usable from cron jobs or other scripts.
 

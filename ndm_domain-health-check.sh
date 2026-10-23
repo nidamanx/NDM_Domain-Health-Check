@@ -41,13 +41,21 @@ APP_LICENSE="AGPL-3.0-or-later"
 # Usage:   ./ndm_domain-health-check.sh [options] [domain]
 #          (asks for the domain when it is not given)
 #
-# Options: -p, --passive         DNS lookups and normal web visits only: no AXFR request,
-#                                no obsolete-TLS test, no connections to mail ports
+# Modes:   passive (default)     DNS lookups, public registries and normal web visits only:
+#                                nothing a normal visitor or mail sender would not do
+#          active                also AXFR request, obsolete-TLS and weak-cipher tests,
+#                                connections to the mail ports and other server probes:
+#                                ONLY for domains you own or manage
+#          A domain listed in ACTIVE_DOMAINS (config file) is checked in active mode.
+#
+# Options: -A, --active          active mode for this run (any domain: only YOUR domains)
+#          -p, --passive         passive mode for this run (even for ACTIVE_DOMAINS)
 #          -r, --related-domains LIST
 #                                other domains of yours, comma or space separated
 #                                (e.g. --related-domains=example.org,example.net). A mail-sending IP
 #                                whose reverse DNS is a forward-confirmed host of one of them
-#                                is accepted. Overrides the RELATED_DOMAINS variable.
+#                                is accepted. Overrides the RELATED_DOMAINS variable;
+#                                -r '' ignores it for one run (e.g. a domain not yours).
 #          -o, --output          also save the report as plain text:
 #                                reports/<domain>_<YYYYMMDD>-<HHMMSS>.txt
 #                                (reports/ is next to this script; see OUTPUT_DIR)
@@ -58,7 +66,8 @@ APP_LICENSE="AGPL-3.0-or-later"
 #          -c, --compare         show what changed since the last saved report of the domain
 #                                (saving with -o always does it)
 #          -a, --all             check the domain given and every domain of RELATED_DOMAINS, and
-#                                print one summary table (brief checks, run four at a time)
+#                                print one summary table (brief checks, run four at a time;
+#                                each domain in its own mode, see Modes)
 #
 #          --requirements        show the needed tools and how to install them
 #          -v, --version         show name, version, author, license and disclaimer
@@ -68,7 +77,8 @@ APP_LICENSE="AGPL-3.0-or-later"
 #          RESOLVER=9.9.9.10           validating resolver to use (Quad9, no filtering)
 #          DKIM_SELECTORS="default x"  DKIM selectors to probe
 #          RELATED_DOMAINS="a.org b.net" your other domains (see --related-domains)
-#          NO_COLOR=1                  disable colors
+#          ACTIVE_DOMAINS="a.org b.net"  your domains checked in active mode without --active
+#          NO_COLOR=1                 disable colors
 #          OUTPUT_DIR=reports          directory for --output (a relative path starts
 #                                      from the script's directory)
 #          DNSBL_RESOLVER=127.0.0.1    resolver used only for the blocklists (default: the
@@ -86,12 +96,13 @@ APP_LICENSE="AGPL-3.0-or-later"
 #          RESOLVER=127.0.0.1 ./ndm_domain-health-check.sh example.com
 #   Precedence: command-line options > environment > config file > defaults
 #   (the defaults are in the CONFIGURATION block at the top of this script).
-#   RELATED_DOMAINS is the exception: it is taken ONLY from the config file or from
-#   --related-domains, never from the environment. Commented out or missing = none.
+#   RELATED_DOMAINS and ACTIVE_DOMAINS are the exception: they are taken ONLY from the
+#   config file (RELATED_DOMAINS also from --related-domains), never from the environment.
+#   Commented out or missing = none.
 #
 # Examples:
-#          ./ndm_domain-health-check.sh example.com         (full check: only YOUR domains)
-#          ./ndm_domain-health-check.sh --passive example.org   (a domain that is not yours)
+#          ./ndm_domain-health-check.sh example.org         (passive check: any domain)
+#          ./ndm_domain-health-check.sh --active example.com  (full check: only YOUR domains)
 #          ./ndm_domain-health-check.sh --related-domains "example.net example.org" example.com
 #          ./ndm_domain-health-check.sh -o example.com      (report also saved in reports/)
 #
@@ -135,14 +146,15 @@ load_config() {
     value=$(printf '%s' "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
       -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
     case $key in
-      RESOLVER|DKIM_SELECTORS|RELATED_DOMAINS|NO_COLOR|OUTPUT_DIR|DNSBLS|DOMAIN_DNSBLS|DNSBL_RESOLVER|CT_LOOKUP|SPF_PROVIDERS)
+      RESOLVER|DKIM_SELECTORS|RELATED_DOMAINS|ACTIVE_DOMAINS|NO_COLOR|OUTPUT_DIR|DNSBLS|DOMAIN_DNSBLS|DNSBL_RESOLVER|CT_LOOKUP|SPF_PROVIDERS)
         declare -p "$key" >/dev/null 2>&1 || printf -v "$key" '%s' "$value" ;;
     esac
   done <"$CONFIG_FILE"
 }
 # RELATED_DOMAINS must come only from the config file or --related-domains: an exported
-# variable left in the shell must not silently change the results.
-unset RELATED_DOMAINS
+# variable left in the shell must not silently change the results. ACTIVE_DOMAINS only from
+# the config file: an exported variable must never turn on the active checks.
+unset RELATED_DOMAINS ACTIVE_DOMAINS
 load_config
 
 # Quad9 (Swiss non-profit foundation): 9.9.9.10 validates DNSSEC without blocking the
@@ -151,6 +163,8 @@ RESOLVER="${RESOLVER:-9.9.9.10}"
 # DKIM selectors tried (DNS cannot list them): the ones most mail services use.
 DKIM_SELECTORS="${DKIM_SELECTORS:-brevo1 brevo2 ctct1 ctct2 default dkim dkim1 dkim2 fm1 fm2 fm3 google hs1 hs2 k1 k2 k3 km1 km2 mail mandrill mte1 mte2 pdk1 pdk2 protonmail protonmail2 protonmail3 s1 s2 selector1 selector2 sig1 smtp zmail zoho}"
 RELATED_DOMAINS="${RELATED_DOMAINS:-}"
+# Domains checked in active mode without --active (see "Modes" in --help). Default: none.
+ACTIVE_DOMAINS="${ACTIVE_DOMAINS:-}"
 # These lists are expanded unquoted: a glob character would match file names of the current directory.
 DKIM_SELECTORS=${DKIM_SELECTORS//[*?[]/}
 OUTPUT_DIR="${OUTPUT_DIR:-reports}"
@@ -1519,16 +1533,26 @@ usage() {
   awk '/^# HELP-BEGIN/ {f = 1; next} /^# HELP-END/ {exit} f {sub(/^# ?/, ""); print}' "$0"
 }
 
-PASSIVE=""
+# Command-line mode: "active", "passive" or empty (then ACTIVE_DOMAINS decides, per domain).
+MODE_CLI=""
+MODE_SHORT_A=""
 BRIEF=""
 COMPARE=""
 ALL=""
 OUTPUT=""
 OUTPUT_DIR_CLI=""
 domain=""
+set_mode() {
+  if [[ -n $MODE_CLI && $MODE_CLI != "$1" ]]; then
+    echo "Options --active and --passive cannot be used together (see --help)" >&2; exit 2
+  fi
+  MODE_CLI=$1
+}
 while (($#)); do
   case $1 in
-    -p|--passive) PASSIVE=1 ;;
+    -A) set_mode active; MODE_SHORT_A=1 ;;
+    --active) set_mode active ;;
+    -p|--passive) set_mode passive ;;
     -b|--brief) BRIEF=1 ;;
     -c|--compare) COMPARE=1 ;;
     -a|--all) ALL=1 ;;
@@ -1566,9 +1590,29 @@ elif [[ $OUTPUT_DIR != /* ]]; then
 fi
 # The child process works with the folder its parent resolved (including --output-dir).
 [[ -n ${_NDM_OUTDIR:-} ]] && OUTPUT_DIR=$_NDM_OUTDIR
-# Normalize the related domains: commas to spaces, lowercase, no trailing dots.
-RELATED_DOMAINS=$(printf '%s' "${RELATED_DOMAINS//[*?[]/}" | tr ',' ' ' | tr '[:upper:]' '[:lower:]' \
-  | tr -s ' ' '\n' | sed -e 's/\.$//' -e '/^$/d' | paste -sd ' ' -)
+# -A is next to -a (--all): with CAPS LOCK on, "-a EXAMPLE.COM" arrives as "-A EXAMPLE.COM" and
+# would silently start the active checks. An all-uppercase domain after -A is taken as that.
+caps_lock_check() {
+  if [[ -n $MODE_SHORT_A && $1 == *[[:upper:]]* && $1 != *[[:lower:]]* ]]; then
+    echo "Error: -A with the all-uppercase domain '$1': is CAPS LOCK on?" >&2
+    echo "Write the domain in lowercase, or use --active (see --help)." >&2
+    exit 2
+  fi
+}
+caps_lock_check "$domain"
+# Normalize a domain list: commas to spaces, lowercase, no trailing dots.
+normalize_domains() {
+  printf '%s' "${1//[*?[]/}" | tr ',' ' ' | tr '[:upper:]' '[:lower:]' \
+    | tr -s ' ' '\n' | sed -e 's/\.$//' -e '/^$/d' | paste -sd ' ' -
+}
+RELATED_DOMAINS=$(normalize_domains "$RELATED_DOMAINS")
+ACTIVE_DOMAINS=$(normalize_domains "$ACTIVE_DOMAINS")
+# Mode of a domain: the command line wins, then ACTIVE_DOMAINS (exact names), else passive.
+mode_of() {
+  if [[ -n $MODE_CLI ]]; then echo "$MODE_CLI"
+  elif [[ " $ACTIVE_DOMAINS " == *" $1 "* ]]; then echo active
+  else echo passive; fi
+}
 for t in $REQUIRED_TOOLS; do
   if ! have "$t"; then
     { echo "Error: '$t' is required but not installed."; echo; requirements_help; } >&2
@@ -1578,7 +1622,7 @@ done
 
 # Portfolio: one brief check per domain, a table at the end.
 portfolio() {
-  local list="" d i=0 args facts rc f name err warn chk tip
+  local list="" d i=0 args facts rc f name err warn chk tip active=""
   [[ -n $domain ]] && list=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]')
   for d in $RELATED_DOMAINS; do
     [[ $d == -* ]] && continue
@@ -1596,10 +1640,12 @@ portfolio() {
   for d in $list; do
     i=$((i + 1))
     args=(--brief)
-    [[ -n $PASSIVE ]] && args+=(--passive)
+    # Without a mode on the command line, each child applies ACTIVE_DOMAINS from the same config file.
+    [[ -n $MODE_CLI ]] && args+=("--$MODE_CLI")
     [[ -n $OUTPUT ]] && args+=(-o)
     [[ -n $OUTPUT_DIR_CLI ]] && args+=(--output-dir "$OUTPUT_DIR_CLI")
-    [[ -n $RELATED_DOMAINS ]] && args+=(--related-domains "$RELATED_DOMAINS")
+    # Passed even when empty: "-r ''" must not let the child reload the list from the config file.
+    args+=(--related-domains "$RELATED_DOMAINS")
     _NDM_FACTS_FILE="$PF_DIR/facts_$i" NO_COLOR=1 "${BASH:-bash}" "$0" "${args[@]}" "$d" >"$PF_DIR/out_$i" 2>&1 &
     PF_PIDS+=("$!")
     ((i % 4 == 0)) && wait
@@ -1616,6 +1662,7 @@ portfolio() {
       rc=1; continue
     fi
     err=$(pf '~err' "$facts"); warn=$(pf '~warn' "$facts"); chk=$(pf '~check' "$facts"); tip=$(pf '~tip' "$facts")
+    [[ $(pf '~mode' "$facts") == active ]] && active+="${active:+ }$d"
     ((${err:-0} > 0)) && rc=1
     f=$(pf '~mail' "$facts")
     printf '  %-30s %s%3s%s %s%3s%s %3s %3s  %-7s %-6s %-11s %-9s %-9s %s\n' "$d" \
@@ -1624,7 +1671,8 @@ portfolio() {
       "$(pf '~mta_sts' "$facts")" "$(d=$(pf '~reg_days' "$facts"); [[ -n $d ]] && echo "${d} d" || echo -)" \
       "$(d=$(pf '~cert_days' "$facts"); [[ -n $d ]] && echo "${d} d" || echo -)$([[ $f == no ]] && echo '  (no mail)')"
   done
-  printf '  %s✘ errors  ⚠ warnings  ◆ to check  ↑ improvements.  Domain / Certificate: days left.%s\n\n' "$C_DIM" "$C_RESET"
+  printf '  %s✘ errors  ⚠ warnings  ◆ to check  ↑ improvements.  Domain / Certificate: days left.%s\n' "$C_DIM" "$C_RESET"
+  printf '  %sActive mode: %s%s\n\n' "$C_DIM" "${active:-none (all passive; see --help)}" "$C_RESET"
   rm -rf "${PF_DIR:?}"
   return "$rc"
 }
@@ -1632,6 +1680,7 @@ if [[ -n $ALL ]]; then portfolio; exit $?; fi
 
 if [[ -z $domain ]]; then
   read -r -p "Domain to check: " domain
+  caps_lock_check "$domain"
 fi
 # Normalize: lowercase, strip scheme, path and trailing dot.
 domain=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]' \
@@ -1642,6 +1691,10 @@ if [[ ! $domain =~ ^(${dns_label}\.)+${dns_label}$ || ${#domain} -gt 253 ]]; the
   exit 1
 fi
 parent="${domain#*.}"
+# PASSIVE (non-empty = passive) gates every active check below.
+MODE=$(mode_of "$domain")
+PASSIVE=""
+[[ $MODE == passive ]] && PASSIVE=1
 
 if [[ -n $OUTPUT && -z ${_NDM_CHILD:-} ]]; then
   if [[ ! -d $OUTPUT_DIR ]]; then (umask 077; mkdir -p "$OUTPUT_DIR" 2>/dev/null); fi
@@ -1655,9 +1708,9 @@ if [[ -n $OUTPUT && -z ${_NDM_CHILD:-} ]]; then
     exit 1
   fi
   child_args=()
-  [[ -n $PASSIVE ]] && child_args+=(--passive)
+  [[ -n $MODE_CLI ]] && child_args+=("--$MODE_CLI")
   [[ -n $BRIEF ]] && child_args+=(--brief)
-  [[ -n $RELATED_DOMAINS ]] && child_args+=(--related-domains "$RELATED_DOMAINS")
+  child_args+=(--related-domains "$RELATED_DOMAINS")
   raw=$(mktemp 2>/dev/null || mktemp -t ndm_report)
   report_tmp=""
   trap 'rm -f "$raw" "$report_tmp"' EXIT
@@ -1694,6 +1747,14 @@ rule() { printf '%s%s═══════════════════�
 printf '\n'; rule
 printf '%s  %s (%s)%s\n' "$C_BOLD" "$APP_NAME" "$APP_VERSION" "$C_RESET"
 printf '%s  Domain: %s%s\n' "$C_BOLD" "$(printf '%s' "$domain" | tr '[:lower:]' '[:upper:]')" "$C_RESET"
+if [[ -n $PASSIVE ]]; then
+  printf '%s  Mode: passive%s%s (no AXFR, no obsolete-TLS test, no mail port connections)%s\n' \
+    "$C_BOLD" "$C_RESET" "$C_DIM" "$C_RESET"
+  [[ -z $MODE_CLI ]] && printf '  %s      Your own domain? --active, or list it in ACTIVE_DOMAINS%s\n' "$C_DIM" "$C_RESET"
+else
+  printf '%s%s  Mode: active%s%s (AXFR, obsolete-TLS test, mail ports, server probes)%s\n' \
+    "$C_BOLD" "$C_YELLOW" "$C_RESET" "$C_YELLOW" "$C_RESET"
+fi
 printf '  %sResolver: %s  ·  %s%s\n' "$C_DIM" "$RESOLVER" "$(date '+%Y-%m-%d %H:%M')" "$C_RESET"
 printf '  %s%s✔%s ok  %s↑%s improvable  %s◆%s to check  %s⚠%s warning  %s✘%s error  %sℹ%s info%s\n' "$C_DIM" \
   "$C_GREEN" "$C_DIM" "$C_MAGENTA" "$C_DIM" "$C_CYAN" "$C_DIM" "$C_YELLOW" "$C_DIM" "$C_RED" "$C_DIM" \
@@ -1704,9 +1765,6 @@ fi
 if [[ ! -e $CONFIG_FILE && -e $CONFIG_FILE.example ]]; then
   printf '  %sNo config file: copy %s to %s to customize%s\n' "$C_DIM" \
     "$(basename "$CONFIG_FILE").example" "$(basename "$CONFIG_FILE")" "$C_RESET"
-fi
-if [[ -n $PASSIVE ]]; then
-  printf '  %sMode: passive (no AXFR, no obsolete-TLS test, no mail port connections)%s\n' "$C_YELLOW" "$C_RESET"
 fi
 if ((${#missing[@]})); then
   printf '  %sOptional tools missing (some checks skipped): %s  ·  see --requirements%s\n' \
@@ -3632,16 +3690,21 @@ fi
 
 # ------------------------------------------------- [12] cert transparency ----
 section 12 "CERTIFICATE TRANSPARENCY" "public CT logs via crt.sh (every name that ever had a certificate); CNAME targets via $RESOLVER"
+# Whenever names are missing from the list below, this link shows them all.
+ct_url="https://crt.sh/?q=%25.$domain"
 if [[ $CT_LOOKUP == off ]]; then
   info "CT logs" "not searched (CT_LOOKUP=off in the config file)"
+  detail "See them at $ct_url"
 elif ! have python3; then
   info "CT logs" "skipped (python3 not available)"
+  detail "See them at $ct_url"
 else
   ct_err=$(awk -F'\t' '$1 == "error" {print $2}' <<<"$ct")
   read -r _ ct_total ct_current < <(awk -F'\t' '$1 == "summary" {print $1, $2, $3}' <<<"$ct")
   if [[ -n $ct_err || -z ${ct_total:-} ]]; then
-    warn "CT logs" "crt.sh temporarily unavailable (${ct_err:-no answer}): names list not shown"
-    detail "Try again later. Without it, SPF addresses of your subdomains are not recognized"
+    warn "CT logs" "temporarily unavailable: crt.sh did not answer (${ct_err:-no answer})"
+    detail "Check them later at $ct_url"
+    detail "Without them, SPF addresses of your subdomains are not recognized"
     detail "and may show up as \"to check\" in section 7."
   elif ((ct_total == 0)); then
     info "CT logs" "no certificates found for this domain"
@@ -3665,7 +3728,17 @@ else
       esac
       detail "$(printf '%-36s %-30s %s' "$name" "$state" "$where")"
     done <<<"$ct"
-    ((ct_total > CT_LIMIT)) && detail "… and $((ct_total - CT_LIMIT)) more (see https://crt.sh/?q=%25.$domain)"
+    # Not listed: names beyond CT_LIMIT, plus the expired ones gone from DNS counted in the header.
+    ct_rows=$(awk -F'\t' '$1 == "row"' <<<"$ct" | wc -l | tr -d ' ')
+    ct_hidden=$((ct_total - ct_rows + ct_old))
+    ((ct_hidden > 0)) && detail "… and $ct_hidden more (see $ct_url)"
+    # Listed in every mode: CT logs and DNS are public, and a live name with an expired
+    # certificate is often a forgotten service.
+    ct_stale=$(awk -F'\t' '$1 == "row" && $4 == 0 && $5 != "-" && $5 != "*"' <<<"$ct" | wc -l | tr -d ' ')
+    if ((ct_stale)); then
+      detail "$ct_stale name(s) still in DNS with only expired certificates: possibly forgotten"
+      detail "services, to renew or remove (public data from CT logs and DNS, shown in every mode)."
+    fi
   fi
 fi
 
@@ -3704,7 +3777,7 @@ if ((dang_bad == 0)); then
   else ok "CNAME targets" "$dang_cnames CNAME(s) checked, every target exists"; fi
 fi
 
-# Own domains only: a certificate check of every live name found in the CT logs (forgotten
+# Active mode only: a certificate check of every live name found in the CT logs (forgotten
 # subdomains are where expired certificates hide).
 if [[ -z $PASSIVE ]] && have python3 && [[ -n ${ct:-} ]]; then
   ct_specs=()
@@ -3722,7 +3795,7 @@ if [[ -z $PASSIVE ]] && have python3 && [[ -n ${ct:-} ]]; then
   fi
 fi
 
-# Own domains only: CNAMEs to services that answer "this site does not exist" can be claimed
+# Active mode only: CNAMEs to services that answer "this site does not exist" can be claimed
 # by someone else, even though the target name still resolves.
 if [[ -z $PASSIVE ]] && have curl; then
   while IFS=$'\t' read -r name target dang_st; do
@@ -3931,6 +4004,7 @@ fact '~spf_all' "$spf_all"
 fact '~dmarc_policy' "${dmarc_pol:--}"
 fact '~mta_sts' "${sts_mode:--}"
 fact '~mail' "$([[ -z $mx || $mx == "0 ." ]] && echo no || echo yes)"
+fact '~mode' "$MODE"
 
 if [[ -n ${_NDM_SAVE:-} || -n $COMPARE ]]; then
   prev=""

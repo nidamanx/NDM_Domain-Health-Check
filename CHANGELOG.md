@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `-A`, `--active`: active mode for one run (only for domains you own or manage). `-A` is the
+  uppercase of `-a` (`--all`): with CAPS LOCK on, `-a EXAMPLE.COM` would arrive as
+  `-A EXAMPLE.COM`, so an all-uppercase domain after `-A` is refused (exit code 2).
+  `--active` together with `--passive` is also refused.
+- `ACTIVE_DOMAINS` config setting: your own domains, checked in active mode without
+  `--active`; every other domain stays passive. Exact names, read only from the config
+  file (never from the environment).
+- README: section "Passive and active mode", which explains what each mode does and why
+  the active checks are kept separate.
+
+### Changed
+
+- **Passive mode is now the default.** A plain `./ndm_domain-health-check.sh example.com`
+  no longer sends an AXFR request, tests obsolete TLS and weak ciphers, connects to the mail
+  ports or probes the nameservers and the names found in the CT logs: these checks look like
+  a scan to the owner of a domain that is not yours, and the tool should never run them by
+  accident. **To keep the previous behaviour on your own domains**, list them in
+  `ACTIVE_DOMAINS` in the config file, or add `--active`.
+- The report header always states the mode, right under the domain name:
+  `Mode: passive (…)` or `Mode: active (…)` (in yellow), followed by what it includes or
+  leaves out.
+- Certificate Transparency (section 12): when names still in DNS have only expired
+  certificates, a note says they may be forgotten services and that the data is public
+  (CT logs and DNS), so it is shown in every mode.
+- Certificate Transparency (section 12): a link to crt.sh whenever names are missing from
+  the list. `… and N more` now also counts the expired names gone from DNS, which are not
+  listed; the link is also shown when crt.sh is temporarily unavailable ("Check them later
+  at …"), with `CT_LOOKUP=off` and without python3.
+- `--all`: each domain is checked in its own mode, and a line under the summary table lists
+  the domains checked in active mode.
+- `--passive` (`-p`) is still accepted: it forces passive mode, even for a domain listed in
+  `ACTIVE_DOMAINS`.
+
+### Fixed
+
+- `--related-domains ''` (`-r ''`) now ignores `RELATED_DOMAINS` for one run also with
+  `--output` and `--all`: the child processes reloaded the list from the config file.
+
 ## [1.2.0] - 2026-10-23
 
 ### Added
