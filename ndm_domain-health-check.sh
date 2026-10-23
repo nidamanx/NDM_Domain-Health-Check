@@ -3644,9 +3644,17 @@ else
   elif ((ct_total == 0)); then
     info "CT logs" "no certificates found for this domain"
   else
-    info "Names in CT logs" "$ct_total (with a currently valid certificate: $ct_current)"
+    # Names gone from DNS (and wildcards) with only expired certificates are history: CT logs
+    # are append-only, so they stay listed forever. Counted in the header, not listed.
+    read -r ct_old ct_old_years < <(awk -F'\t' '$1 == "row" && $4 == 0 && ($5 == "-" || $5 == "*") {
+        n++; y = substr($3, 1, 4); if (!lo || y < lo) lo = y; if (y > hi) hi = y }
+      END { print n + 0, (lo == hi ? lo : lo "–" hi) }' <<<"$ct")
+    ct_head="$ct_total (valid certificate: $ct_current"
+    ((ct_old)) && ct_head+="; expired and gone from DNS: $ct_old, $ct_old_years"
+    info "Names in CT logs" "$ct_head)"
     while IFS=$'\t' read -r kind name expiry current ip; do
       [[ $kind == row ]] || continue
+      ((!current)) && [[ $ip == '-' || $ip == '*' ]] && continue
       if ((current)); then state="cert valid until $expiry"; else state="last cert expired $expiry"; fi
       case $ip in
         '*') where="(wildcard)" ;;
