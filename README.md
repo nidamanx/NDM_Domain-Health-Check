@@ -13,6 +13,15 @@ finding, in a single colored report that tells you where each value comes from.
 It is one Bash script with no extra libraries: it relies on `dig` and, when available,
 on standard tools such as `python3` (standard library only), `delv`, `openssl` and `curl`.
 
+## Background
+
+I have been a system administrator since 1993. Checking a domain has always meant the
+same routine: a few `dig` queries, a look at the certificate, a test of the mail server.
+The routine grew with the internet itself: SPF, DKIM, DMARC, DNSSEC, Certificate
+Transparency and MTA-STS each brought new things to check, and I added them to a script
+whenever my work needed them. NDM Domain Health Check is that script, largely rewritten
+and documented for public release; 1.1.0 is its first public version.
+
 ---
 
 ## Contents
@@ -641,9 +650,11 @@ NDM_Domain-Health-Check/
 ├── reports/                              saved reports (contents ignored by Git)
 │   └── .gitkeep                          keeps the empty directory in the repository
 ├── .github/workflows/ci.yml              automatic checks (ShellCheck, smoke tests)
+├── .github/dependabot.yml                monthly updates of the GitHub Actions used by CI
 ├── .gitattributes                        keeps Linux line endings (needed on Windows)
 ├── .gitignore
 ├── LICENSE                               GNU AGPL v3
+├── CHANGELOG.md                          changes in each version
 ├── SECURITY.md                           how to report a vulnerability
 ├── README.md                             documentation in English
 └── README.it.md                          documentation in Italian
@@ -653,7 +664,8 @@ NDM_Domain-Health-Check/
 
 The project follows [Semantic Versioning](https://semver.org/). Name, description,
 author, version and release date are in the **APP INFO** block at the very top of
-`ndm_domain-health-check.sh`: it is the only place to edit when publishing a new release.
+`ndm_domain-health-check.sh`; `--version` shows them. Every release has a Git tag
+`vX.Y.Z`, and the changes of each version are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License and disclaimer
 

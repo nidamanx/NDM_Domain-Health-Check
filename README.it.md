@@ -18,6 +18,16 @@ strumenti standard come `python3` (solo libreria standard), `delv`, `openssl` e 
 > traduzione italiana della documentazione. In caso di differenze fa fede il
 > [README in inglese](README.md).
 
+## Origine
+
+Faccio il sistemista dal 1993. Controllare un dominio ha sempre voluto dire la stessa
+routine: qualche interrogazione con `dig`, uno sguardo al certificato, una prova del server
+di posta. La routine è cresciuta insieme a Internet: SPF, DKIM, DMARC, DNSSEC, Certificate
+Transparency e MTA-STS hanno aggiunto ogni volta qualcosa da controllare, e l'ho aggiunto a
+uno script quando il lavoro lo richiedeva. NDM Domain Health Check è quello script,
+in gran parte riscritto e documentato per la pubblicazione; la 1.1.0 è la prima versione
+pubblica.
+
 ---
 
 ## Indice
@@ -673,9 +683,11 @@ NDM_Domain-Health-Check/
 ├── reports/                              report salvati (contenuto ignorato da Git)
 │   └── .gitkeep                          mantiene la cartella vuota nel repository
 ├── .github/workflows/ci.yml              controlli automatici (ShellCheck, test di base)
+├── .github/dependabot.yml                aggiornamento mensile delle GitHub Actions usate dalla CI
 ├── .gitattributes                        mantiene le terminazioni di riga Linux (serve su Windows)
 ├── .gitignore
 ├── LICENSE                               GNU AGPL v3
+├── CHANGELOG.md                          modifiche di ogni versione (in inglese)
 ├── SECURITY.md                           come segnalare una vulnerabilità
 ├── README.md                             documentazione in inglese
 └── README.it.md                          documentazione in italiano
@@ -685,7 +697,8 @@ NDM_Domain-Health-Check/
 
 Il progetto segue il [Semantic Versioning](https://semver.org/lang/it/). Nome,
 descrizione, autore, versione e data di rilascio sono nel blocco **APP INFO** in cima a
-`ndm_domain-health-check.sh`: è l'unico punto da modificare per pubblicare una nuova versione.
+`ndm_domain-health-check.sh`; `--version` li mostra. Ogni versione ha un tag Git `vX.Y.Z`
+e le modifiche di ciascuna sono elencate in [CHANGELOG.md](CHANGELOG.md) (in inglese).
 
 ## Licenza e disclaimer
 
